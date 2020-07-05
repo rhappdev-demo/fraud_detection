@@ -16,5 +16,9 @@ RUN cd /usr/local/bin && \
 RUN curl "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip awscliv2.zip && ./aws/install && rm awscliv2.zip && rm -rf ./aws 
     # && ln -s /usr/local/bin/aws2 /usr/local/bin/aws
-    
+
+RUN curl -L https://github.com/tektoncd/cli/releases/download/v0.9.0/tkn_0.9.0_Linux_x86_64.tar.gz | \
+    tar -xvzf - -C /usr/local/bin/ tkn && chmod 755 /usr/local/bin/tkn
+
+
 USER jboss

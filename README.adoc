@@ -82,17 +82,17 @@ TODO
 
 === Tekton Toolchain ===
 
-NOTE: The script referenced is run during the link:docs/Walkthrough.adoc[Walkthrough].  This just gives a little more info if needed for troubleshooting
+NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
 
 Run the following script to setup the entire cicd project (it will create a project called `<PROJECT_PREFIX>-cicd` (where `<PROJECT_PREFIX>` is the value passed to --project-prefix in the command below) if it doesn't exist already to install all the artifacts into.
 
 ----
-$DEMO_HOME/scripts/create-tekton-cicd.sh install --project-prefix petclinic --user USER --password <PASSWORD>
+$DEMO_HOME/scripts/create-tekton-cicd.sh install --project-prefix fraud-demo --user USER --password <PASSWORD>
 ----
 
 The `<USER>` and `<PASSWORD>` that is passed in is the user and password needed to create a pull secret for registry.redhat.io.  This is needed for the s2i images.  It will basically associate this secret with the pipelines service account.  NOTE: you can use a redhat registry server account name and password instead of your own login and password
 
-WARNING: This must be run *after* the corresponding development environment (e.g. petclinic-dev) has been created or the script will fail.  This is due to the cicd pipeline needing to update the permissions of the pipeline service account to be able to "see into and change" (e.g. edit) the dev project
+WARNING: This must be run *after* the corresponding development environment (e.g. fraud-demo-dev) has been created or the script will fail.  This is due to the cicd pipeline needing to update the permissions of the pipeline service account to be able to "see into and change" (e.g. edit) the dev project
 
 == Troubleshooting ==
 
@@ -110,16 +110,16 @@ Let's say that the task "unit-test" failed in a recent run.
 ----
 $ oc get pods
 NAME                                                              READY   STATUS      RESTARTS   AGE
-petclinic-dev-pipeline-tomcat-dwjk4-checkout-vnp7v-pod-f8b5j      0/1     Completed   0          3m18s
-petclinic-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46    0/1     Error       0          3m
-petclinic-dev-pipeline-tomcat-kpbx9-checkout-t78sr-pod-qnfrh      0/1     Error       0 
+fraud-demo-dev-pipeline-tomcat-dwjk4-checkout-vnp7v-pod-f8b5j      0/1     Completed   0          3m18s
+fraud-demo-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46    0/1     Error       0          3m
+fraud-demo-dev-pipeline-tomcat-kpbx9-checkout-t78sr-pod-qnfrh      0/1     Error       0 
 ----
 +
 . Then use the `oc debug` command to restart that pod to look around:
 +
 ----
-$ oc debug po/petclinic-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46
-Starting pod/petclinic-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46-debug, command was: /tekton/tools/entrypoint -wait_file /tekton/downward/ready -wait_file_content -post_file /tekton/tools/0 -termination_path /tekton/termination -entrypoint ./mvnw -- -Dmaven.repo.local=/workspace/source/artefacts -s /var/config/settings.xml package
+$ oc debug po/fraud-demo-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46
+Starting pod/fraud-demo-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46-debug, command was: /tekton/tools/entrypoint -wait_file /tekton/downward/ready -wait_file_content -post_file /tekton/tools/0 -termination_path /tekton/termination -entrypoint ./mvnw -- -Dmaven.repo.local=/workspace/source/artefacts -s /var/config/settings.xml package
 If you don't see a command prompt, try pressing enter.
 sh-4.2$ 
 ----
@@ -183,8 +183,8 @@ You can see limited logs in the Tekton UI, but if you want the full logs, you ca
 # Get the list of pipelineruns in the current project
 tkn pipelinerun list
 
-# Output the full logs of the named pipeline run (where petclinic-deploy-dev-run-j7ktj is a pipeline run name )
-tkn pipelinerun logs petclinic-deploy-dev-run-j7ktj
+# Output the full logs of the named pipeline run (where fraud-demo-deploy-dev-run-j7ktj is a pipeline run name )
+tkn pipelinerun logs fraud-demo-deploy-dev-run-j7ktj
 ----
 
 To output the logs of a currently running pipelinerun (`pr`) and follow them, use:
@@ -197,3 +197,5 @@ tkn pr logs -L -f
 
 === Still to come ===
 . Nexus repositories for caching and storing artefacts (see link:https://help.sonatype.com/repomanager3/formats/pypi-repositories[here])
+. Sonarqube support for python (for example link:https://www.sonarqube.org/features/multi-languages/python/[here]
+. Set the appropriate default branch in gogs (for nested project)

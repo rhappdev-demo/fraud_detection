@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  generateName: fraud-model-dev-pipeline-run-
+spec:
+  pipelineRef:
+    name: fraud-model-dev-pipeline
+  resources:
+  - name: app-image
+    resourceRef:
+      name: model-image
+  workspaces:
+  - name: local-source
+    persistentVolumeClaim:
+      claimName: source-pvc
+    

@@ -1,0 +1,23 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: slack-trigger-template
+spec:
+  params:
+  - name: image-label
+    description: The image label to promote to staging
+    default: "later"
+  resourcetemplates:
+  - apiVersion: tekton.dev/v1alpha1
+    kind: PipelineRun
+    metadata:
+      generateName: fraud-model-deploy-stage-pipeline-triggered-run-
+      labels:
+        tekton.dev/pipeline: fraud-model-deploy-stage-pipeline
+    spec:
+      pipelineRef:
+        name: fraud-model-deploy-stage
+      params:
+      - name: IMAGE_TAG
+        value: $(params.image-label)

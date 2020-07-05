@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: train-model-run-
+spec:
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: source-pvc
+  inputs:
+    params:
+      - name: MODEL_NAME
+        value: "train_iris.py"
+      - name: CONTEXT
+        value: "seldon-core/getting_started/wrap-model/"
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: train-model

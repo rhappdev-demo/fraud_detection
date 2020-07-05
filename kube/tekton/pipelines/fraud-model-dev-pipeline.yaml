@@ -1,0 +1,110 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: fraud-model-dev-pipeline
+spec:
+  workspaces:
+  - name: local-source
+  params:
+    - name: GIT_REPO
+      type: string
+      description: The repo to check output
+      default: 'http://gogs:3000/gogs/seldon-core-launcher.git'
+    - name: GIT_REVISION
+      type: string
+      description: The branch to be built
+      default: 'master'
+    - name: GIT_MESSAGE
+      type: string
+      description: The commit message of the triggered build (if any)
+      default: "<none>"
+  resources:
+  - name: app-image
+    type: image
+  tasks:
+  - name: checkout
+    taskRef:
+      name: git-clone
+    workspaces:
+    - name: output
+      workspace: local-source
+    params:
+    - name: url
+      value: $(params.GIT_REPO)
+    - name: revision
+      value: $(params.GIT_REVISION)
+    - name: message
+      value: $(params.GIT_MESSAGE)
+    # by setting subdirectory parameters to ""
+    # checkout will clone to the root of the local-source
+    # volume, which will allow other tasks to find this directory
+    # at their name for the mount point
+    - name: subdirectory
+      value: ""
+    - name: deleteExisting
+      value: "true"
+    - name: submodules
+      value: "false"
+  - name: set-build-version
+    taskRef:
+      name: set-build-version
+    runAfter:
+      - checkout
+    # retries necessary if we run in parallel with a workspace
+    retries: 3
+    workspaces:
+    - name: source
+      workspace: local-source
+  - name: train-model
+    taskRef:
+      name: train-model
+    runAfter:
+      - checkout
+    # retries necessary if we run in parallel with a workspace
+    retries: 3
+    workspaces:
+    - name: source
+      workspace: local-source
+    params:
+    - name: MODEL_NAME
+      value: "train_iris.py"
+    - name: CONTEXT
+      value: "seldon-core/getting_started/wrap-model/"
+  - name: build-image
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - train-model
+      - set-build-version
+    params:
+      - name: COMMANDS
+        value: |
+            echo "PLACEHOLDER: build image"
+    workspaces:
+    - name: source
+      workspace: local-source
+  - name: deploy-model
+    taskRef:
+      name: openshift-client
+    runAfter:
+      - build-image
+    params:
+      - name: COMMANDS
+        value: |
+            echo "PLACEHOLDER: deploy-model"
+    workspaces:
+    - name: source
+      workspace: local-source
+  - name: prompt-stage
+    taskRef:
+      name: prompt-slack
+    runAfter:
+      - deploy-model
+    params:
+    - name: webhook-secret
+      value: slack-webhook-secret
+    - name: message-payload-configmap
+      value: slack-message-payload
+    - name: callback-payload
+      value: $(tasks.set-build-version.results.build-number)
+   

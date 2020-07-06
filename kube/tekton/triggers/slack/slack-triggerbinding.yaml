@@ -1,0 +1,17 @@
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: slack-triggerbinding
+spec:
+  params:
+  - name: image-label
+    value: $(body.slack.actions[0].value)
+  - name: user-name
+    value: $(body.slack.user.username)
+  - name: slack-channel-id
+    value: $(body.slack.channel.id)
+  - name: response-url
+    value: $(body.slack.response_url)
+  - name: message
+    value: $(body.slack.message.text)

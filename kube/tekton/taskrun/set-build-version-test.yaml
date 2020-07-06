@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: set-build-version-test-
+spec:
+  taskRef:
+    name: set-build-version
+  workspaces:
+  - name: source
+    persistentVolumeClaim:
+      claimName: source-pvc

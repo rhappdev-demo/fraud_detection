@@ -1,0 +1,4 @@
+[submodule "seldon-core-launcher"]
+	path = seldon-core-launcher
+	url = https://github.com/hatmarch/seldon-core-launcher.git
+	branch = master

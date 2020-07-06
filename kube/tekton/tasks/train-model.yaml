@@ -1,0 +1,45 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: train-model
+spec:
+  workspaces:
+  - name: source
+  inputs:
+    params:
+    - name: MODEL_NAME
+      description: the name of the python file that has the training code
+    - name: CONTEXT
+      description: relative path to the model from the root of the workspace
+      default: "."
+  results:
+    - name: serialized-model
+      description: The name of the serialized model
+  steps:
+    - name: train
+      image: quay.io/siamaksade/python-oc
+      workingDir: $(workspaces.source.path)
+      script: |
+        cd $(inputs.params.CONTEXT)
+
+        # remove any previously saved models
+        rm *.sav || true
+        pip3 install --user sklearn
+        /usr/bin/python3 $(inputs.params.MODEL_NAME)
+    - name: report
+      # NOTE: Can't use minimal image because find command is needed
+      image: registry.access.redhat.com/ubi8/ubi
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/usr/bin/env bash
+
+        cd $(inputs.params.CONTEXT)
+        MODEL_FILE=$(find . -name *.sav | head -1)
+        if [[ -z "${MODEL_FILE}" ]]; then
+          echo "No model in format .sav was found after train"
+          exit 1
+        fi
+
+        echo ${MODEL_FILE} | tr -d "\n" | tee $(results.serialized-model.path)
+      

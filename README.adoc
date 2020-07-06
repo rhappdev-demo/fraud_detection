@@ -1,0 +1,201 @@
+= AI/ML Meets DevOps 
+:experimental:
+:toc:
+:toclevels: 4
+
+== Introduction == 
+
+This project is still in progress. The objective of this project is to illustrate the use of OpenDataHub running on Openshift to run AI/ML workload. OpenDataHub components used in the project include:
+
+* Spache Spark
+* Red Hat Data Virtualization
+* Jupyterhub
+* Seldon
+* Kafka
+* Rook
+
+[WARNING]
+====
+Make sure you run the following command before executing any of these commands listed in this demo.
+
+----
+source scripts/shell-setup.sh 
+----
+====
+
+image:images/inProgress.jpeg["Work In Progress"]
+
+=== 1 Repository Structure
+Folders will be added as the project evolves. Currently, it consists of the following folders:
+- data - contains the **creditcard.csv** which contains the data needed for the training/testing of fraud detection 
+- images - contains images used in the README.adoc file
+- notebook = contains the jupyter notebook **frauddetection.ipynb**. When completed, this notebook allows selection of input from either Spark, data virtualization or  CSV file. Currently, only CSV file is supported.
+
+=== 2 Fraud Detection
+The Jupyter notebook uses the Random Forest algorithm to train a model to detect fraud based on the features in the **creditcard.csv** file. It also plots the confusion matrix to analyse how good the fit is.
+
+=== 3 Planned Data Sources
+Reading CSV file is only the first step. Addition data sources include:
+- Apache Spark
+- Data Virtualization ie, a virtual database which combines info from a relational database and a CSV file which the Jupyter notebook accesses using JDBC.
+
+== Demo Setup
+
+Here are the instructions for setting up the demo on an OpenShift cluster.
+
+These have been tested with OpenShift v4.4
+
+=== Operator Prerequisites
+
+==== OpenShift Pipelines (Tekton) 
+
+Pipeline setup is inspired by this post link:https://developers.redhat.com/blog/2020/02/26/speed-up-maven-builds-in-tekton-pipelines/[here]
+
+From the instructions link:https://github.com/openshift/pipelines-tutorial/blob/master/install-operator.md[here]
+
+. Install subscription (in openshift operators)
++
+----
+oc apply -f $DEMO_HOME/kube/tekton/tekton-subscription.yaml
+----
++
+. Optionally install tekton dashboard (for visualization) as per link:https://github.com/tektoncd/dashboard[here]
++
+----
+oc apply -f $DEMO_HOME/kube/tekton/dashboard/openshift-tekton-dashboard-release.yaml
+oc wait --for=condition=Available deployment/tekton-dashboard -n openshift-pipelines
+----
++
+. Then you can open the dashboard by hitting this URL.  It will authenticate using OpenShift oauth
++
+----
+echo "https://$(oc get route tekton-dashboard -o jsonpath='{.spec.host}' -n openshift-pipelines)/"
+----
++
+. When the operator has finished installing, it will install a pipeline service account in all projects that have sufficient permissions to build stuff.  There is also a centralized openshift-pipelines project that holds pipeline supporting pods.  
++
+NOTE: See also tips and tricks from the link:https://github.com/openshift/pipelines-tutorial[pipelines tutorial]
+
+==== OpenDataHub
+
+TODO
+
+=== Tekton Toolchain ===
+
+NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
+
+Run the following script to setup the entire cicd project (it will create a project called `<PROJECT_PREFIX>-cicd` (where `<PROJECT_PREFIX>` is the value passed to --project-prefix in the command below) if it doesn't exist already to install all the artifacts into.
+
+----
+$DEMO_HOME/scripts/create-tekton-cicd.sh install --project-prefix fraud-demo --user USER --password <PASSWORD>
+----
+
+The `<USER>` and `<PASSWORD>` that is passed in is the user and password needed to create a pull secret for registry.redhat.io.  This is needed for the s2i images.  It will basically associate this secret with the pipelines service account.  NOTE: you can use a redhat registry server account name and password instead of your own login and password
+
+WARNING: This must be run *after* the corresponding development environment (e.g. fraud-demo-dev) has been created or the script will fail.  This is due to the cicd pipeline needing to update the permissions of the pipeline service account to be able to "see into and change" (e.g. edit) the dev project
+
+== Troubleshooting ==
+
+
+=== Troubleshooting Pipeline Tasks ===
+
+==== General ====
+
+If a pipeline fails and the logs are not enough to determine the problem, you can use the fact that every task maps to a pod to your advantage.
+
+Let's say that the task "unit-test" failed in a recent run.
+
+. First look for the pod that represents that run
++
+----
+$ oc get pods
+NAME                                                              READY   STATUS      RESTARTS   AGE
+fraud-demo-dev-pipeline-tomcat-dwjk4-checkout-vnp7v-pod-f8b5j      0/1     Completed   0          3m18s
+fraud-demo-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46    0/1     Error       0          3m
+fraud-demo-dev-pipeline-tomcat-kpbx9-checkout-t78sr-pod-qnfrh      0/1     Error       0 
+----
++
+. Then use the `oc debug` command to restart that pod to look around:
++
+----
+$ oc debug po/fraud-demo-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46
+Starting pod/fraud-demo-dev-pipeline-tomcat-dwjk4-unit-tests-5pct2-pod-4gk46-debug, command was: /tekton/tools/entrypoint -wait_file /tekton/downward/ready -wait_file_content -post_file /tekton/tools/0 -termination_path /tekton/termination -entrypoint ./mvnw -- -Dmaven.repo.local=/workspace/source/artefacts -s /var/config/settings.xml package
+If you don't see a command prompt, try pressing enter.
+sh-4.2$ 
+----
+
+==== Volume Issues ====
+
+Sometimes pipelines fail to run because the workspace volume cannot be mounted.  Looks like to root cause has to do with the underlying infra volume being deleted out from underneath a `PersistentVolume`.  If you have pipelines that are timing out due to pods failing to run (usually you won't get any log stream), take a look at the events on the pod and see if you notice these kind of mounting errors:
+
+image:images/missing-volume.png[]
+
+This can usually be remedied by deleting the PVC, but finalizers keep PVCs from being deleted if a pod has a claim.
+
+If you run into this issue, *cancel the affected pipeline* (otherwise the PVC won't be able to be deleted) and either run the following command or see the additional details that follow
+
+----
+scripts/util-recreate-pvc.sh pipeline-source-pvc.yaml
+----
+
+To see all the claims on a PVC, look for the `Mounted By` section of the output of the following describe command (for `pvc/maven-source-pvc`):
+----
+oc describe pvc/maven-source-pvc
+----
+
+To delete all pods that have a claim on the pvc `pvc/maven-source-pvc`:
+----
+oc delete pods $(oc describe pvc/maven-source-pvc | grep "Mounted By" -A40 | sed "s/ //ig" | sed "s/MountedBy://ig")
+----
+
+=== Troubleshooting OpenShift Permissions ===
+
+You can use the `oc run` command to run certain containers in a given project as a service account.
+
+For instance, this command can be used to see what kind of permissions the builder service account has to view other projects (e.g. access to remote imagestreams)
+
+----
+oc run test3 --image=quay.io/openshift/origin-cli:latest --serviceaccount=builder -it --rm=true
+----
+
+=== OpenShift Pipeline (Git) Triggers ===
+
+Tekton allows for `EventListeners`, `TriggerTemplates`, and `TriggerBindings` to allow a git repo to hit a webhook and trigger a build.  See also link:https://github.com/tektoncd/triggers[here].  To get basic triggers going for both gogs and github run the following:
+
+NOTE: For an example of triggers working with Tekton, see files link:https://github.com/siamaksade/tekton-cd-demo/tree/master/triggers[in the template directory of this repo]
+
+NOTE: You may also want to consider link:https://github.com/tektoncd/experimental/blob/master/webhooks-extension/docs/GettingStarted.md[this tekton dashboard functionality]
+
+YAML resources for the pipeline created for this demo can be found in these locations:
+
+. Resources: $DEMO_HOME/kube/tekton/resources
+. Triggers: $DEMO_HOME/kube/tekton/triggers
+
+==== Triggered Pipeline Fails to Run ====
+
+If the trigger doesn't appear to fire, then check the logs of the pod that is running that represents the webhook.  The probably is likely in the `PipelineRun` template.
+
+==== Viewing (Extended) OpenShift Pipeline (Tekton) Logs ====
+
+You can see limited logs in the Tekton UI, but if you want the full logs, you can access these from the command line using the `tkn` command
+
+----
+# Get the list of pipelineruns in the current project
+tkn pipelinerun list
+
+# Output the full logs of the named pipeline run (where fraud-demo-deploy-dev-run-j7ktj is a pipeline run name )
+tkn pipelinerun logs fraud-demo-deploy-dev-run-j7ktj
+----
+
+To output the logs of a currently running pipelinerun (`pr`) and follow them, use:
+
+----
+tkn pr logs -L -f
+----
+
+== Appendix ==
+
+=== Still to come ===
+. Nexus repositories for caching and storing artefacts (see link:https://help.sonatype.com/repomanager3/formats/pypi-repositories[here])
+. Sonarqube support for python (for example link:https://www.sonarqube.org/features/multi-languages/python/[here]
+. Set the appropriate default branch in gogs (for nested project)

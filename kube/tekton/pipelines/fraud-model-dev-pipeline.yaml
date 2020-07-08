@@ -72,14 +72,25 @@ spec:
       value: "seldon-core/getting_started/wrap-model/"
   - name: build-image
     taskRef:
-      name: openshift-client
+      name: workspace-s2i
     runAfter:
       - train-model
       - set-build-version
     params:
-      - name: COMMANDS
-        value: |
-            echo "PLACEHOLDER: build image"
+      - name: PATH_CONTEXT
+        value: "seldon-core/getting_started/wrap-model"
+      - name: TLSVERIFY
+        value: "false"
+      - name: BUILDER_IMAGE
+        # NOTE: This should have been imported already, see create-tekton-cicd.sh
+        # FIXME: project name should not be hard-coded
+        value: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
+      - name: IMAGE_TAG
+        value: $(tasks.set-build-version.results.build-number)
+    resources:
+      outputs:
+      - name: image
+        resource: app-image
     workspaces:
     - name: source
       workspace: local-source

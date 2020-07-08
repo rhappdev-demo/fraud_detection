@@ -1,0 +1,35 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: workspace-s2i-run-
+spec:
+  workspaces:
+  - name: source
+    persistentVolumeClaim:
+      claimName: source-pvc
+  inputs:
+    params:
+      - name: PATH_CONTEXT
+        value: "seldon-core/getting_started/wrap-model"
+      - name: TLSVERIFY
+        value: "false"
+      - name: BUILDER_IMAGE
+        # NOTE: This should have been imported already, see create-tekton-cicd.sh
+        # FIXME: project name should not be hard-coded
+        value: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
+      - name: IMAGE_TAG
+        value: tr
+      - name: LOGLEVEL
+        value: '5'
+  outputs:
+    resources:
+      - name: image
+        paths:
+          - build-image/image
+        resourceRef:
+          name: model-image
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: workspace-s2i
+  timeout: 1h0m0s

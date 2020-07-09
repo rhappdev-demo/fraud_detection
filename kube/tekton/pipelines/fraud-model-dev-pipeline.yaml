@@ -81,6 +81,8 @@ spec:
         value: "seldon-core/getting_started/wrap-model"
       - name: TLSVERIFY
         value: "false"
+      - name: BUILDER_IMAGE_SCRIPTS_DIR
+        value: /s2i/bin/
       - name: BUILDER_IMAGE
         # NOTE: This should have been imported already, see create-tekton-cicd.sh
         # FIXME: project name should not be hard-coded

@@ -17,6 +17,8 @@ spec:
         # NOTE: This should have been imported already, see create-tekton-cicd.sh
         # FIXME: project name should not be hard-coded
         value: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
+      - name: BUILDER_IMAGE_SCRIPTS_DIR
+        value: /s2i/bin/
       - name: IMAGE_TAG
         value: tr
       - name: LOGLEVEL

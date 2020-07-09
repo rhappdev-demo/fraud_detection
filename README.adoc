@@ -25,16 +25,27 @@ source scripts/shell-setup.sh
 
 image:images/inProgress.jpeg["Work In Progress"]
 
-=== 1 Repository Structure
+=== Repository Structure
 Folders will be added as the project evolves. Currently, it consists of the following folders:
 - data - contains the **creditcard.csv** which contains the data needed for the training/testing of fraud detection 
 - images - contains images used in the README.adoc file
 - notebook = contains the jupyter notebook **frauddetection.ipynb**. When completed, this notebook allows selection of input from either Spark, data virtualization or  CSV file. Currently, only CSV file is supported.
 
-=== 2 Fraud Detection
+=== Fraud Detection
 The Jupyter notebook uses the Random Forest algorithm to train a model to detect fraud based on the features in the **creditcard.csv** file. It also plots the confusion matrix to analyse how good the fit is.
 
-=== 3 Planned Data Sources
+Your jupyterhub should look like the following screenshot with 'data' and 'jdbc' directories containing the content in the respective directories in the 'notebook' directory.
+
+image:images/jupyter-small.png["jupyterhub"]
+
+You have to install the following Python modules from inside the jupyterhub container running your notebook unless you create your own image with these modules added:
+
+----
+pip3 install ipywidgets ipython_blocking IPython jaydebeapi
+----
+
+
+=== Planned Data Sources
 Reading CSV file is only the first step. Addition data sources include:
 - Apache Spark
 - Data Virtualization ie, a virtual database which combines info from a relational database and a CSV file which the Jupyter notebook accesses using JDBC.

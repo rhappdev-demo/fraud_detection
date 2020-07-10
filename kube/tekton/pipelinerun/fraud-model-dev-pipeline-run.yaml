@@ -5,6 +5,13 @@ metadata:
 spec:
   pipelineRef:
     name: fraud-model-dev-pipeline
+  params:
+  # uncomment these parameters if you want to point to the internal git repo, pointing external might
+  # make iteration easier
+  # - name: GIT_REPO
+  #   value: "https://github.com/hatmarch/seldon-core-launcher.git"
+  - name: PATH_CONTEXT
+    value: "seldon-core/getting_started/wrap-model"
   resources:
   - name: app-image
     resourceRef:

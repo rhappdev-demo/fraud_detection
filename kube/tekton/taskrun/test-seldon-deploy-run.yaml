@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: test-seldon-deploy-run-
+spec:
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: source-pvc
+  inputs:
+    params:
+      - name: MODEL_DEPLOY
+        value: 'TMPL_deployment.json'
+      - name: PROJECT
+        value: fraud-demo-dev
+      - name: MODEL_IMAGE
+        value: 'image-registry.openshift-image-registry.svc:5000/fraud-demo-dev/fraud-model:pv7d7'
+      - name: PATH_CONTEXT
+        value: "seldon-core/getting_started/wrap-model"
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: seldon-model-deploy

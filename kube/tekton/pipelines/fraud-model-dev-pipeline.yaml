@@ -18,6 +18,10 @@ spec:
       type: string
       description: The commit message of the triggered build (if any)
       default: "<none>"
+    - name: PATH_CONTEXT
+      type: string
+      description: Where the code is relative to the start of the GIT_REPO
+      default: "."
   resources:
   - name: app-image
     type: image
@@ -69,29 +73,48 @@ spec:
     - name: MODEL_NAME
       value: "train_iris.py"
     - name: CONTEXT
-      value: "seldon-core/getting_started/wrap-model/"
+      value: $(params.PATH_CONTEXT)
   - name: build-image
     taskRef:
-      name: openshift-client
+      name: workspace-s2i
     runAfter:
       - train-model
       - set-build-version
     params:
-      - name: COMMANDS
-        value: |
-            echo "PLACEHOLDER: build image"
+      - name: PATH_CONTEXT
+        value: $(params.PATH_CONTEXT)
+      - name: TLSVERIFY
+        value: "false"
+      - name: BUILDER_IMAGE_SCRIPTS_DIR
+        value: /s2i/bin/
+      - name: BUILDER_IMAGE
+        # NOTE: This should have been imported already, see create-tekton-cicd.sh, "demo-cicd" will
+        # be sed replaced in the demo creation script
+ 
+        value: image-registry.openshift-image-registry.svc:5000/demo-cicd/seldon-builder
+      - name: IMAGE_TAG
+        value: $(tasks.set-build-version.results.build-number)
+    resources:
+      outputs:
+      - name: image
+        resource: app-image
     workspaces:
     - name: source
       workspace: local-source
   - name: deploy-model
     taskRef:
-      name: openshift-client
+      name: seldon-model-deploy
     runAfter:
       - build-image
     params:
-      - name: COMMANDS
-        value: |
-            echo "PLACEHOLDER: deploy-model"
+      - name: MODEL_DEPLOY
+        value: 'TMPL_deployment.json'
+      - name: PATH_CONTEXT
+        value: $(params.PATH_CONTEXT)
+      - name: PROJECT
+        value: demo-dev
+      - name: MODEL_IMAGE
+        value: $(tasks.build-image.results.pushed-image-tag)
     workspaces:
     - name: source
       workspace: local-source

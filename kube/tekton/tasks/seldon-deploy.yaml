@@ -1,0 +1,53 @@
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: seldon-model-deploy
+spec:
+  workspaces:
+    - name: source
+      description: Where the model was getting built from
+  inputs:
+    params:
+      - name: MODEL_DEPLOY
+        type: string 
+        description: The name of the Seldon Model (in json or yaml format) to be deployed.
+      - name: PATH_CONTEXT
+        type: string
+        description: The location of the deployment configuration (MODEL_DEPLOY) relative to the top of the repo
+        default: "."
+      - name: PROJECT
+        type: string
+        description: The name of the project to deploy the model into
+      - name: MODEL_IMAGE
+        type: string
+        description: The name of the model image that should be deployed
+  steps:
+    - name: run-commands
+      workingDir: $(workspaces.source.path)
+      image: quay.io/openshift/origin-cli:latest
+      script: |
+        #!/usr/bin/env bash
+        set -e -o pipefail
+
+        # First find the deployment file
+        MODEL_DEPLOY_FILE=$(inputs.params.PATH_CONTEXT)/$(inputs.params.MODEL_DEPLOY)
+        if [[ ! -f ${MODEL_DEPLOY_FILE} ]]; then
+          echo "Could not find ${MODEL_DEPLOY_FILE} in $(workspaces.source.path), here is what is in that directory:"
+          ls -l
+          exit 1
+        fi
+
+        # replace the token in the MODEL_DEPLOY with the MODEL_IMAGE
+        REPL_MODEL_DEPLOY_PATH="/tmp/$(inputs.params.MODEL_DEPLOY)"
+        cat ${MODEL_DEPLOY_FILE} | sed 's#\${SELDON_IMAGE_REPLACE}#$(inputs.params.MODEL_IMAGE)#g' > ${REPL_MODEL_DEPLOY_PATH}
+        echo "Deployment is: "
+        cat ${REPL_MODEL_DEPLOY_PATH}
+
+        TARGET_PROJECT=$(inputs.params.PROJECT)
+        # actually apply the deployment
+        # Get the name of the deployment as output from the oc application
+        SELDON_DEPLOY_NAME=$(oc apply -f ${REPL_MODEL_DEPLOY_PATH} -o jsonpath='{.metadata.name}' -n ${TARGET_PROJECT}) 
+        DEPLOYMENT=$(oc get deployment -l seldon-deployment-id="${SELDON_DEPLOY_NAME}" -n ${TARGET_PROJECT} -o jsonpath='{.items[0].metadata.name}')
+
+        echo "Waiting for deployment ${DEPLOYMENT} to complete"
+        oc rollout status deployment/${DEPLOYMENT} -n ${TARGET_PROJECT}

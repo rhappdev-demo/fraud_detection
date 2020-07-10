@@ -140,7 +140,7 @@ command.install() {
   else
     info "Skipping deploy to staging pipeline at user's request"
   fi
-  sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-dev-pipeline.yaml | oc apply -f - -n $cicd_prj
+  sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-dev-pipeline.yaml | sed "s/demo-cicd/$cicd_prj/g" | oc apply -f - -n $cicd_prj
   
   # Install pipeline resources
   sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/resources/model-image.yaml | oc apply -f - -n $cicd_prj
@@ -153,6 +153,11 @@ command.install() {
   oc rollout status deployment/gogs -n $cicd_prj
   oc create -f $DEMO_HOME/kube/config/gogs-init-taskrun.yaml -n $cicd_prj
 
+  # install ODH components
+  oc apply -f $DEMO_HOME/kube/odh/odh-kfdef.yaml -n $dev_prj
+  oc apply -f $DEMO_HOME/kube/odh/odh-kfdef.yaml -n $stage_prj
+
+  # FIXME: Add checks to determine when necessary ODH components are online
 
   # Leave user in cicd project
   oc project $cicd_prj

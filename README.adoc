@@ -87,9 +87,16 @@ echo "https://$(oc get route tekton-dashboard -o jsonpath='{.spec.host}' -n open
 +
 NOTE: See also tips and tricks from the link:https://github.com/openshift/pipelines-tutorial[pipelines tutorial]
 
-==== OpenDataHub
+==== OpenDataHub ====
 
-TODO
+. Install subscription (in openshift operators)
++ 
+----
+oc apply -f $DEMO_HOME/kube/odh/odh-subscription.yaml
+----
++
+. When you run the link:scripts/create-tekton-cicd.sh[setup script] it will make sure the proper OpenDataHub (odh) elements get installed.
+
 
 === Tekton Toolchain ===
 

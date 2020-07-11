@@ -17,7 +17,7 @@ spec:
         - name: REPO_TO_CLONE
           type: string
           description: The url of the REPO to copy into gogs.
-          default: https://github.com/hatmarch/seldon-core-launcher.git
+          default: https://github.com/hatmarch/fraud_detection_support.git
     stepTemplate:
       env:
         - name: NAMESPACE
@@ -56,7 +56,7 @@ spec:
             print("Created admin user {}:{}".format(gogs_user, gogs_pwd))
 
           # create git repo
-          data_repo = '{"clone_addr": "$(inputs.params.REPO_TO_CLONE)", "uid": 1, "repo_name": "seldon-core-launcher"}'
+          data_repo = '{"clone_addr": "$(inputs.params.REPO_TO_CLONE)", "uid": 1, "repo_name": "fraud_detection_support"}'
           headers = {'Content-Type': 'application/json'}
           resp = requests.post(url = gogsURL + "/api/v1/repos/migrate", headers = headers, auth = (gogs_user, gogs_pwd), data = data_repo)  
 
@@ -64,12 +64,12 @@ spec:
             print("Error creating git repo (status code: {})".format(resp.status_code))
             print(resp.content)
           else:
-            print("Created git repo seldon-core-launcher")
+            print("Created git repo fraud_detection_support")
 
           # configure webhook
           data_webhook = '{"type": "gogs", "config": { "url": "' + webhookURL + '", "content_type": "json"}, "events": ["push"], "active": true}'
           headers = {'Content-Type': 'application/json'}
-          resp = requests.post(url = gogsURL + "/api/v1/repos/" + gogs_user + "/seldon-core-launcher/hooks", 
+          resp = requests.post(url = gogsURL + "/api/v1/repos/" + gogs_user + "/fraud_detection_support/hooks", 
                               headers = headers, 
                               auth = (gogs_user, gogs_pwd), 
                               data = data_webhook) 

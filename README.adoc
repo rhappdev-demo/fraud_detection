@@ -95,22 +95,30 @@ NOTE: See also tips and tricks from the link:https://github.com/openshift/pipeli
 oc apply -f $DEMO_HOME/kube/odh/odh-subscription.yaml
 ----
 +
-. When you run the link:scripts/create-tekton-cicd.sh[setup script] it will make sure the proper OpenDataHub (odh) elements get installed.
+. When you run the link:scripts/create-demo.sh[setup script] it will make sure the proper OpenDataHub (odh) elements get installed.
 
 
-=== Tekton Toolchain ===
+=== Demo Setup ===
 
 NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
 
 Run the following script to setup the entire cicd project (it will create a project called `<PROJECT_PREFIX>-cicd` (where `<PROJECT_PREFIX>` is the value passed to --project-prefix in the command below) if it doesn't exist already to install all the artifacts into.
 
+Prior to running this script you will need your login details for access.redhat.com to get a private registries and you will also need to <<Slackbot Setup,setup a slackbot with a webhook url>>
+
 ----
-$DEMO_HOME/scripts/create-tekton-cicd.sh install --project-prefix fraud-demo --user USER --password <PASSWORD>
+$DEMO_HOME/scripts/create-demo.sh install --project-prefix fraud-demo --user <USER> --password <PASSWORD> --slack-webhook-url <SLACK_WEBHOOK_URL>
 ----
 
 The `<USER>` and `<PASSWORD>` that is passed in is the user and password needed to create a pull secret for registry.redhat.io.  This is needed for the s2i images.  It will basically associate this secret with the pipelines service account.  NOTE: you can use a redhat registry server account name and password instead of your own login and password
 
 WARNING: This must be run *after* the corresponding development environment (e.g. fraud-demo-dev) has been created or the script will fail.  This is due to the cicd pipeline needing to update the permissions of the pipeline service account to be able to "see into and change" (e.g. edit) the dev project
+
+=== Slackbot Setup ===
+
+The CI/CD toolchain that is setup by the link:scripts/create-demo.sh[create demo script] will prompt to slack when a deployment to dev is completed.  In order for this to work, you need to setup a slack bot and obtain a bot specific webhook to be able to post.
+
+TODO: Write slackbot instructions
 
 == Troubleshooting ==
 

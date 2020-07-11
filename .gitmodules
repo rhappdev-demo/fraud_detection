@@ -1,0 +1,4 @@
+[submodule "fraud_detection_support"]
+	path = fraud_detection_support
+	url = https://github.com/hatmarch/fraud_detection_support.git
+	branch = master

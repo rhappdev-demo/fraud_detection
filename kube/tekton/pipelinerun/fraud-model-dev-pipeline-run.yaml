@@ -11,7 +11,9 @@ spec:
   # - name: GIT_REPO
   #   value: "https://github.com/hatmarch/seldon-core-launcher.git"
   - name: PATH_CONTEXT
-    value: "seldon-core/getting_started/wrap-model"
+    value: "models/iris-model"
+  - name: MODEL_NAME
+    value: "iris"
   resources:
   - name: app-image
     resourceRef:

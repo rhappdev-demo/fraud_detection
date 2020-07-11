@@ -9,7 +9,7 @@ spec:
     - name: GIT_REPO
       type: string
       description: The repo to check output
-      default: 'http://gogs:3000/gogs/seldon-core-launcher.git'
+      default: 'http://gogs:3000/gogs/fraud_detection_support.git'
     - name: GIT_REVISION
       type: string
       description: The branch to be built
@@ -22,6 +22,9 @@ spec:
       type: string
       description: Where the code is relative to the start of the GIT_REPO
       default: "."
+    - name: MODEL_NAME
+      type: string
+      description: The base name of the model that is to be trained and deployed.  This name will be used to find appropriate resources
   resources:
   - name: app-image
     type: image
@@ -71,7 +74,7 @@ spec:
       workspace: local-source
     params:
     - name: MODEL_NAME
-      value: "train_iris.py"
+      value: "train_$(params.MODEL_NAME).py"
     - name: CONTEXT
       value: $(params.PATH_CONTEXT)
   - name: build-image
@@ -108,7 +111,7 @@ spec:
       - build-image
     params:
       - name: MODEL_DEPLOY
-        value: 'TMPL_deployment.json'
+        value: "$(params.MODEL_NAME)_deployment.json"
       - name: PATH_CONTEXT
         value: $(params.PATH_CONTEXT)
       - name: PROJECT

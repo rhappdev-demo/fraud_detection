@@ -19,47 +19,47 @@ spec:
           name: manifests
           path: odhseldon/cluster
       name: odhseldon
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: ai-library/cluster
-      name: ai-library-cluster
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: ai-library/operator
-      name: ai-library-operator
-    - kustomizeConfig:
-        parameters:
-          - name: SUPERSET_ADMIN_PASSWORD
-            value: admin
-        repoRef:
-          name: manifests
-          path: superset
-      name: superset
-    - kustomizeConfig:
-        parameters:
-          - name: namespace
-            value: openshift-operators
-        repoRef:
-          name: manifests
-          path: kafka/cluster
-      name: strimzi-operator
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: kafka/kafka
-      name: kafka-cluster
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: grafana/cluster
-      name: grafana-cluster
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: grafana/grafana
-      name: grafana-instance
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: ai-library/cluster
+    #   name: ai-library-cluster
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: ai-library/operator
+    #   name: ai-library-operator
+    # - kustomizeConfig:
+    #     parameters:
+    #       - name: SUPERSET_ADMIN_PASSWORD
+    #         value: admin
+    #     repoRef:
+    #       name: manifests
+    #       path: superset
+    #   name: superset
+    # - kustomizeConfig:
+    #     parameters:
+    #       - name: namespace
+    #         value: openshift-operators
+    #     repoRef:
+    #       name: manifests
+    #       path: kafka/cluster
+    #   name: strimzi-operator
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: kafka/kafka
+    #   name: kafka-cluster
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: grafana/cluster
+    #   name: grafana-cluster
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: grafana/grafana
+    #   name: grafana-instance
     - kustomizeConfig:
         repoRef:
           name: manifests
@@ -70,16 +70,16 @@ spec:
           name: manifests
           path: radanalyticsio/spark/operator
       name: radanalyticsio-spark-operator
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: prometheus/cluster
-      name: prometheus-cluster
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: prometheus/operator
-      name: prometheus-operator
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: prometheus/cluster
+    #   name: prometheus-cluster
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: prometheus/operator
+    #   name: prometheus-operator
     - kustomizeConfig:
         parameters:
           - name: s3_endpoint_url
@@ -95,26 +95,26 @@ spec:
           name: manifests
           path: jupyterhub/notebook-images
       name: notebook-images
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: airflow/operator
-      name: airflow-operator
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: airflow/cluster
-      name: airflow-cluster
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: odhargo/cluster
-      name: odhargo-cluster
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: odhargo/odhargo
-      name: odhargo
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: airflow/operator
+    #   name: airflow-operator
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: airflow/cluster
+    #   name: airflow-cluster
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: odhargo/cluster
+    #   name: odhargo-cluster
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: odhargo/odhargo
+    #   name: odhargo
   repos:
     - name: kf-manifests
       uri: >-

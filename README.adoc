@@ -26,10 +26,8 @@ source scripts/shell-setup.sh
 image:images/inProgress.jpeg["Work In Progress"]
 
 === Repository Structure
-Folders will be added as the project evolves. Currently, it consists of the following folders:
-- data - contains the **creditcard.csv** which contains the data needed for the training/testing of fraud detection 
-- images - contains images used in the README.adoc file
-- notebook = contains the jupyter notebook **frauddetection.ipynb**. When completed, this notebook allows selection of input from either Spark, data virtualization or  CSV file. Currently, only CSV file is supported.
+
+This repo is to support the overall demo.  The actual ML assets (e.g. jupyter notebooks) can be found in this repository's link:https://github.com/hatmarch/fraud_detection_support[fraud_detection_support] submodule.  Follow the link for more information about notebooks and data therein.
 
 === Fraud Detection
 The Jupyter notebook uses the Random Forest algorithm to train a model to detect fraud based on the features in the **creditcard.csv** file. It also plots the confusion matrix to analyse how good the fit is.
@@ -38,11 +36,7 @@ Your jupyterhub should look like the following screenshot with 'data' and 'jdbc'
 
 image:images/jupyter-small.png["jupyterhub"]
 
-You have to install the following Python modules from inside the jupyterhub container running your notebook unless you create your own image with these modules added:
-
-----
-pip3 install ipywidgets ipython_blocking IPython jaydebeapi
-----
+The notebook will be available on the jupyterhub server that the demo setup script creates.  You can also run the notebook locally by running it within a container based on link:fraud_detection_support/notebook-images/Dockerfile[this Dockerfile] from the link:https://github.com/hatmarch/fraud_detection_support[fraud_detection_support] submodule.
 
 
 === Planned Data Sources
@@ -52,9 +46,11 @@ Reading CSV file is only the first step. Addition data sources include:
 
 == Demo Setup
 
-Here are the instructions for setting up the demo on an OpenShift cluster.
+Here are the instructions for setting up the demo on an OpenShift cluster.  These have been tested with OpenShift v4.4
 
-These have been tested with OpenShift v4.4
+After running through these steps, you should wind up with a project and service layout like this
+
+image:images/demo-layout.png[]
 
 === Operator Prerequisites
 
@@ -98,7 +94,7 @@ oc apply -f $DEMO_HOME/kube/odh/odh-subscription.yaml
 . When you run the link:scripts/create-demo.sh[setup script] it will make sure the proper OpenDataHub (odh) elements get installed.
 
 
-=== Demo Setup ===
+=== Main Demo Setup ===
 
 NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
 
@@ -121,7 +117,6 @@ The CI/CD toolchain that is setup by the link:scripts/create-demo.sh[create demo
 TODO: Write slackbot instructions
 
 == Troubleshooting ==
-
 
 === Troubleshooting Pipeline Tasks ===
 

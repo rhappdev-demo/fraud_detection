@@ -154,10 +154,56 @@ command.install() {
   oc create -f $DEMO_HOME/kube/config/gogs-init-taskrun.yaml -n $cicd_prj
 
   # install ODH components
-  oc apply -f $DEMO_HOME/kube/odh/odh-kfdef.yaml -n $dev_prj
-  oc apply -f $DEMO_HOME/kube/odh/odh-kfdef.yaml -n $stage_prj
+  declare -r arrOdhProjects=( $dev_prj )
 
-  # FIXME: Add checks to determine when necessary ODH components are online
+  # FIXME: TESTING
+  # arrOdhProjects=( $dev_prj $stage_prj )
+  for prj in "${arrOdhProjects[@]}"
+  do
+    echo "setting up ODH in project $prj"
+    oc apply -f $DEMO_HOME/kube/odh/odh-kfdef.yaml -n $prj
+  done
+
+  for prj in "${arrOdhProjects[@]}"
+  do
+    echo "Customizing ODH components in $prj"
+
+    # Add appropriate singleuser notebook image to jupyter hub
+    #
+    # Remove other images installed by ODH by default
+    echo "Removing default notebook images"
+    NOTEBOOK_IS=""
+    while [[ -z "${NOTEBOOK_IS}" ]]; do
+      sleep 1
+      echo "Looking for extraneous notebooks to remove"
+      # NOTE: Due to -e and pipefail, we need to add the || true to grep since grep will error if it can't find a match (!)
+      NOTEBOOK_IS=$(oc get is --no-headers -o name -n $prj | (grep s2i || true) | sed "s#^[^\/]\+\/##g")
+    done
+    # NOTE: If ${NOTEBOOK_IS} is used bare, the command fails.  Appears to have something to do with newlines being escaped out and 
+    # breaking the underlying (web) API call
+    oc delete -n $prj is $(echo ${NOTEBOOK_IS})
+
+    # FIXME: Change image name
+    oc import-image fraud-demo-dev/andy-notebook-image --from quay.io/mhildenb/andy-notebook-image --reference-policy='local' --confirm -n $prj
+    oc label is/andy-notebook-image "opendatahub.io/notebook-image"=true -n $prj
+
+    # update the notebook server config file to add a kubespawner post_start hook that will automatcially
+    # clone the local gogs repo into the notebook server (persistent volume backed) filesystem
+    oc patch cm jupyterhub-cfg -n $prj --type='json' -p="$(cat $DEMO_HOME/kube/odh/jupyter/jupyterhub-cfg-patch.json)"
+
+    while [[ -z "$(oc get dc/jupyterhub -n $prj 2>/dev/null)" ]]; do
+      echo "Waiting for jupyterhub to be available"
+      sleep 2
+    done
+
+    echo "Restarting jupyter hub to get new images"
+    oc rollout cancel dc/jupyterhub -n $prj
+    # wait for the cancel to take effect
+    sleep 5
+    oc rollout latest dc/jupyterhub -n $prj
+    oc rollout status dc/jupyterhub -n $prj
+
+  done        
 
   # Leave user in cicd project
   oc project $cicd_prj
@@ -169,7 +215,7 @@ command.start() {
 }
 
 command.uninstall() {
-  oc delete project $dev_prj $stage_prj $cicd_prj
+  cleanup.sh -p $PRJ_PREFIX
 }
 
 main() {

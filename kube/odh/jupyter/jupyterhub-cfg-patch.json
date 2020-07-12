@@ -1,0 +1,7 @@
+[
+    {
+        "op": "replace",
+        "path": "/data/jupyterhub_config.py",
+        "value": "c.KubeSpawner.lifecycle_hooks = {\n  \"postStart\": {\n    \"exec\": {\n        \"command\": [\"/bin/sh\", \"-c\", \"git clone http://gogs.fraud-demo-cicd.svc.cluster.local:3000/gogs/fraud_detection_support.git /opt/app-root/src/fraud_detection\"]\n    }\n  }\n}\n"
+    }
+]

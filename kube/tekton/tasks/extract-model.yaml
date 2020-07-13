@@ -1,0 +1,55 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: extract-model
+spec:
+  workspaces:
+  - name: source
+  inputs:
+    params:
+    - name: NOTEBOOK_NAME
+      description: The name of the Juptyer notebook from which to extract the training and deployment code
+    - name: CONTEXT
+      description: relative path to the notebook from the root of the workspace
+      default: "."
+    - name: EXTRACTION_IMAGE
+      description: This is the image in which the extraction will happen.  This is ideally the same image as the one that was used to run the notebook
+  results:
+    - name: train-file
+      description: The name of the python file that does the training
+    - name: deploy-file
+      description: The name of the python file that is deployable in SeldonCore
+  steps:
+    - name: extract
+      image: $(inputs.params.EXTRACTION_IMAGE)
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/bash
+        set -e pipefail
+
+        cd $(inputs.params.CONTEXT)
+
+        declare -r NOTEBOOK_NAME=$(inputs.params.NOTEBOOK_NAME)
+        jupyter nbconvert --to python ${NOTEBOOK_NAME} --output full.py
+
+        # Declare associative array of notebook tag names to results
+        declare -A mapTags=( [Train]=$(results.train-file.path) [Deploy]=$(results.deploy-file.path) )
+
+        for TAG in "${!mapTags[@]}"
+        do
+          echo "Extracting tag $TAG from notebook ${NOTEBOOK_NAME}"
+          jupyter nbconvert --TagRemovePreprocessor.enabled=True --TagRemovePreprocessor.remove_cell_tags="['${TAG}']" \
+            --to python ${NOTEBOOK_NAME} --output not-${TAG}.py
+          
+          #Turn off exit on error since diff has non-standard return values
+          set +e
+          diff --changed-group-format='%<' --unchanged-group-format='' full.py not-${TAG}.py > ${TAG}.py
+          set -e
+          
+          echo "Writing ${TAG}.py as:"
+          cat ${TAG}.py
+          # write the model to corresponding result path (defined in associate array above)
+          echo ${TAG}.py | tr -d "\n" | tee ${mapTags[$TAG]}
+        done
+      

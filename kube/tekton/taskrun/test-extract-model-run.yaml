@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: extract-model-run-
+spec:
+  workspaces:
+    - name: source
+      persistentVolumeClaim:
+        claimName: source-pvc
+  inputs:
+    params:
+      - name: NOTEBOOK_NAME
+        value: "frauddetection.ipynb"
+      - name: CONTEXT
+        value: "notebook"
+      - name: EXTRACTION_IMAGE
+        # FIXME: Get this from the downward API, pipeline context (when released), or centrally named location
+        value: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/extract-model:latest
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: extract-model

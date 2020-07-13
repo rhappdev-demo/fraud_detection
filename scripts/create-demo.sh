@@ -117,6 +117,7 @@ command.install() {
 
   info "Configure service account permissions for pipeline"
   oc policy add-role-to-user edit system:serviceaccount:$cicd_prj:pipeline -n $dev_prj
+  oc policy add-role-to-user system:image-puller system:serviceaccount:$cicd_prj:pipeline -n $dev_prj
   oc policy add-role-to-user edit system:serviceaccount:$cicd_prj:pipeline -n $stage_prj
 
   info "Deploying CI/CD infra to $cicd_prj namespace"
@@ -184,8 +185,11 @@ command.install() {
     oc delete -n $prj is $(echo ${NOTEBOOK_IS})
 
     # FIXME: Change image name
-    oc import-image fraud-demo-dev/andy-notebook-image --from quay.io/mhildenb/andy-notebook-image --reference-policy='local' --confirm -n $prj
+    oc import-image ${prj}/andy-notebook-image --from quay.io/mhildenb/andy-notebook-image --reference-policy='local' --confirm -n $prj
     oc label is/andy-notebook-image "opendatahub.io/notebook-image"=true -n $prj
+
+    # Reference the notebook image as a model extraction image in the cicd namespace for Tekton
+    oc tag ${prj}/andy-notebook-image:latest ${cicd_prj}/extract-model:latest
 
     # update the notebook server config file to add a kubespawner post_start hook that will automatcially
     # clone the local gogs repo into the notebook server (persistent volume backed) filesystem

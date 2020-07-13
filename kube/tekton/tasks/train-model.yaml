@@ -18,15 +18,16 @@ spec:
       description: The name of the serialized model
   steps:
     - name: train
-      image: quay.io/siamaksade/python-oc
+    # FIXME: Don't name the project explicitly
+      image: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
       workingDir: $(workspaces.source.path)
       script: |
         cd $(inputs.params.CONTEXT)
 
         # remove any previously saved models
         rm *.sav || true
-        pip3 install --user sklearn
-        /usr/bin/python3 $(inputs.params.MODEL_NAME)
+        pip3 install --user -r requirements.txt
+        python $(inputs.params.MODEL_NAME)
     - name: report
       # NOTE: Can't use minimal image because find command is needed
       image: registry.access.redhat.com/ubi8/ubi
@@ -37,8 +38,11 @@ spec:
         cd $(inputs.params.CONTEXT)
         MODEL_FILE=$(find . -name *.sav | head -1)
         if [[ -z "${MODEL_FILE}" ]]; then
-          echo "No model in format .sav was found after train"
-          exit 1
+          MODEL_FILE=$(find . -name *.pkl | head -1)
+          if [[ -z "${MODEL_FILE}" ]]; then
+            echo "No model in format .sav was found after train"
+            exit 1
+          fi
         fi
 
         echo ${MODEL_FILE} | tr -d "\n" | tee $(results.serialized-model.path)

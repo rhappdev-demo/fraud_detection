@@ -156,8 +156,8 @@ command.install() {
   # install ODH components
   declare -r arrOdhProjects=( $dev_prj )
 
-  # FIXME: TESTING
-  # arrOdhProjects=( $dev_prj $stage_prj )
+  # Looks like ODH can't really be installed to multiple projects
+  # declare -r arrOdhProjects=( $dev_prj $stage_prj )
   for prj in "${arrOdhProjects[@]}"
   do
     echo "setting up ODH in project $prj"

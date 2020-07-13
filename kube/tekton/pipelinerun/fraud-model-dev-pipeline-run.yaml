@@ -9,11 +9,11 @@ spec:
   # uncomment these parameters if you want to point to the internal git repo, pointing external might
   # make iteration easier
   # - name: GIT_REPO
-  #   value: "https://github.com/hatmarch/seldon-core-launcher.git"
+  #   value: "https://github.com/hatmarch/fraud_detection_support.git"
   - name: PATH_CONTEXT
-    value: "models/iris-model"
+    value: "models/fraud-model"
   - name: MODEL_NAME
-    value: "iris"
+    value: "Fraud"
   resources:
   - name: app-image
     resourceRef:

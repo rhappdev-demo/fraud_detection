@@ -8,11 +8,11 @@ spec:
     workspaces:
     - name: output
       persistentVolumeClaim:
-        claimName: maven-source-pvc
+        claimName: source-pvc
     inputs:
       params:
       - name: url
-        value: 'https://github.com/hatmarch/seldon-core-launcher.git'
+        value: 'https://github.com/hatmarch/fraud_detection_support.git'
       - name: revision
         value: 'master'
       - name: message

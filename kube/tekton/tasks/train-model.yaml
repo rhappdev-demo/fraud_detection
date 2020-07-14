@@ -12,13 +12,15 @@ spec:
   - name: PATH_CONTEXT
     description: relative path to the train model file (and supporting resources like requirements.txt) from the root of the workspace
     default: "."
+  - name: TRAIN_IMAGE
+    description: The image that should be used to train the model.  Should be the same as any image used for building the model into an inference API
   results:
     - name: serialized-model
       description: The name of the serialized model
   steps:
     - name: train
     # FIXME: Don't name the project explicitly
-      image: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
+      image: $(params.TRAIN_IMAGE)
       workingDir: $(workspaces.workvol.path)
       script: |
         cd $(params.PATH_CONTEXT)

@@ -1,3 +1,6 @@
+# WARNING: DO NOT kubectl apply -f this file directly.  It first needs variable substitution like so:
+# sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-dev-pipeline.yaml | sed "s/demo-cicd/$cicd_prj/g" | oc apply -f - -n $cicd_prj
+# where dev_prj is set to point to your dev project and cicd_prj is set to point to your cicd project
 apiVersion: tekton.dev/v1alpha1
 kind: Pipeline
 metadata:
@@ -95,6 +98,9 @@ spec:
       value: $(tasks.extract-model.results.train-file-name).py
     - name: PATH_CONTEXT
       value: $(tasks.extract-model.results.extraction-path)
+    # NOTE: TRAIN_IMAGE should be the same as the one used for the BUILDER_IMAGE
+    - name: TRAIN_IMAGE
+      value: image-registry.openshift-image-registry.svc:5000/demo-cicd/seldon-builder
   - name: build-image
     taskRef:
       name: seldon-s2i

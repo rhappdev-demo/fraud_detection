@@ -13,6 +13,8 @@ spec:
         value: "Train.py"
       - name: PATH_CONTEXT
         value: "extraction"
+      - name: TRAIN_IMAGE
+        value: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
   serviceAccountName: pipeline
   taskRef:
     kind: Task

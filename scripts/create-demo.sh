@@ -46,7 +46,7 @@ while (( "$#" )); do
       shift 2
       ;;
     --skip-staging-pipeline)
-      SKIP_STAGING_PIPELINE=$1;
+      SKIP_STAGING_PIPELINE=$1
       shift 1
       ;;
     --)
@@ -77,13 +77,14 @@ command.help() {
   COMMANDS:
       install                        Sets up the demo and creates namespaces
       uninstall                      Deletes the demo namespaces
-      start                          Starts the demo pipeline
       help                           Help about this command
 
   OPTIONS:
       -p|--project-prefix [string]   Prefix to be added to demo project names e.g. PREFIX-dev
       --user [string]                User name for the Red Hat registry
       --password [string]            Password for the Red Hat registry
+      --slack-webhook-url            Webhook for posting to a slack bot
+
 EOF
 }
 
@@ -127,7 +128,7 @@ command.install() {
   info "Deploying pipeline, tasks, and workspaces to $cicd_prj namespace"
   oc apply -f $DEMO_HOME/kube/tekton/tasks --recursive -n $cicd_prj
   oc apply -f $DEMO_HOME/kube/tekton/config -n $cicd_prj
-  oc apply -f $DEMO_HOME/kube/tekton/pipelines/pipeline-source-pvc.yaml -n $cicd_prj
+  oc apply -f $DEMO_HOME/kube/tekton/pipelines/pipeline-workvol-pvc.yaml -n $cicd_prj
   
   if [[ -z "${slack_webhook_url}" ]]; then
     info "NOTE: No slack webhook url is set.  You can add this later by running oc create secret generic slack-webhook-secret."
@@ -214,12 +215,8 @@ command.install() {
 
 }
 
-command.start() {
-  oc create -f runs/pipeline-deploy-dev-run.yaml -n $cicd_prj
-}
-
 command.uninstall() {
-  cleanup.sh -p $PRJ_PREFIX
+  $SCRIPT_DIR/cleanup.sh -p $PRJ_PREFIX
 }
 
 main() {

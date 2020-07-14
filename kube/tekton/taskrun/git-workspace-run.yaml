@@ -6,9 +6,9 @@ spec:
     taskRef:
       name: git-clone
     workspaces:
-    - name: output
+    - name: workvol
       persistentVolumeClaim:
-        claimName: source-pvc
+        claimName: workvol-pvc
     inputs:
       params:
       - name: url
@@ -22,6 +22,6 @@ spec:
       # volume, which will allow other tasks to find this directory
       # at their name for the mount point
       - name: subdirectory
-        value: ""
+        value: "source"
       - name: deleteExisting
         value: "true"

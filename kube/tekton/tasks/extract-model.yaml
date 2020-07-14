@@ -1,55 +1,136 @@
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: extract-model
 spec:
   workspaces:
-  - name: source
-  inputs:
-    params:
-    - name: NOTEBOOK_NAME
-      description: The name of the Juptyer notebook from which to extract the training and deployment code
-    - name: CONTEXT
-      description: relative path to the notebook from the root of the workspace
-      default: "."
-    - name: EXTRACTION_IMAGE
-      description: This is the image in which the extraction will happen.  This is ideally the same image as the one that was used to run the notebook
+  - name: workvol
+  params:
+  - name: NOTEBOOK_NAME
+    description: The name of the Juptyer notebook from which to extract the training and deployment code
+  - name: PATH_CONTEXT
+    description: relative path to the notebook from the root of the workspace
+    default: "."
+  - name: EXTRACTION_PATH_CONTEXT
+    description: relative path from the root of the workspace to the directory where the python files will be extracted
+    default: "extract-model"
+  - name: EXTRACTION_IMAGE
+    description: This is the image in which the extraction will happen.  This is ideally the same image as the one that was used to run the notebook
   results:
-    - name: train-file
-      description: The name of the python file that does the training
-    - name: deploy-file
-      description: The name of the python file that is deployable in SeldonCore
+    - name: train-file-name
+      description: The name of the python file (without the .py) that does the training
+    - name: wrapper-class-name
+      description: The name of the python class that is deployable in SeldonCore and wraps the output of the train file
+    - name: extraction-path
+      description: The path relative to the root of the workspace where the python files have been written
+  volumes:
+    - name: extraction-workspace
+      emptyDir: {}
   steps:
-    - name: extract
-      image: $(inputs.params.EXTRACTION_IMAGE)
-      workingDir: $(workspaces.source.path)
+    - name: create-extraction-workspace
+      image: registry.access.redhat.com/ubi8/ubi-minimal:latest
+      workingDir: $(workspaces.workvol.path)
+      volumeMounts:
+        - name: extraction-workspace
+          mountPath: /var/extraction
       script: |
-        #!/bin/bash
+        #!/usr/bin/env bash
+
         set -e pipefail
 
-        cd $(inputs.params.CONTEXT)
+        WORKING_DIR=/var/extraction
+        echo "Moving files from source into working directory: ${WORKING_DIR}"
 
-        declare -r NOTEBOOK_NAME=$(inputs.params.NOTEBOOK_NAME)
-        jupyter nbconvert --to python ${NOTEBOOK_NAME} --output full.py
+        mkdir -p "${WORKING_DIR}"
+        cp -r "$(params.PATH_CONTEXT)"/* "${WORKING_DIR}"
+
+        cd "${WORKING_DIR}"
+        # We should already have a deployment directory from source code that has information 
+        # about the deployment
+        DEPLOYMENT_PATH="deploy"
+        if [[ ! -d "${DEPLOYMENT_PATH}" ]]; then
+          echo "WARNING: Deployment directory ${DEPLOYMENT_PATH} is empty."
+          mkdir -p "${DEPLOYMENT_PATH}"
+        fi
+
+        # move everything in the DEPLOYMENT_PATH up a directory
+        cd "${DEPLOYMENT_PATH}"
+        set +e
+        mv * ..
+        set -e
+        cd ..
+        rm -r "${DEPLOYMENT_PATH}"
+
+    - name: extract
+      image: $(params.EXTRACTION_IMAGE)
+      workingDir: /var/extraction
+      volumeMounts:
+        - name: extraction-workspace
+          mountPath: /var/extraction
+      script: |
+        #!/bin/bash
+        
+        set -u -e pipefail
+
+        # Extract the files working in the extraction workingdir setup 
+        # from the previous step
+
+        declare -r NOTEBOOK_NAME=$(params.NOTEBOOK_NAME)
+        mv "${NOTEBOOK_NAME}" /tmp
+        NOTEBOOK_PATH="/tmp/${NOTEBOOK_NAME}"
+
+        jupyter nbconvert --to python "${NOTEBOOK_PATH}" --output /tmp/full.py
 
         # Declare associative array of notebook tag names to results
-        declare -A mapTags=( [Train]=$(results.train-file.path) [Deploy]=$(results.deploy-file.path) )
+        declare -A mapTags=( [Train]=$(results.train-file-name.path) [Wrapper]=$(results.wrapper-class-name.path) )
 
         for TAG in "${!mapTags[@]}"
         do
           echo "Extracting tag $TAG from notebook ${NOTEBOOK_NAME}"
           jupyter nbconvert --TagRemovePreprocessor.enabled=True --TagRemovePreprocessor.remove_cell_tags="['${TAG}']" \
-            --to python ${NOTEBOOK_NAME} --output not-${TAG}.py
-          
+            --to python "${NOTEBOOK_PATH}" --output /tmp/not-${TAG}.py
+
+          TAG_OUTPUT_FILE_PATH="${TAG}.py"
+        
           #Turn off exit on error since diff has non-standard return values
           set +e
-          diff --changed-group-format='%<' --unchanged-group-format='' full.py not-${TAG}.py > ${TAG}.py
+          diff --changed-group-format='%<' --unchanged-group-format='' /tmp/full.py /tmp/not-${TAG}.py > ${TAG_OUTPUT_FILE_PATH}
           set -e
           
           echo "Writing ${TAG}.py as:"
-          cat ${TAG}.py
+          cat ${TAG_OUTPUT_FILE_PATH}
           # write the model to corresponding result path (defined in associate array above)
-          echo ${TAG}.py | tr -d "\n" | tee ${mapTags[$TAG]}
+          echo ${TAG} | tr -d "\n" | tee ${mapTags[$TAG]}
         done
+    - name: commit-workspace
+      image: registry.access.redhat.com/ubi8/ubi-minimal:latest
+      workingDir: $(workspaces.workvol.path)
+      volumeMounts:
+        - name: extraction-workspace
+          mountPath: /var/extraction
+      script: |
+        #!/usr/bin/env bash
+        set -e pipefail
+
+        echo "Copying files form the working folder to the shared pipeline workspace"
+
+        OUTPUT_DIR_RELATIVE_PATH="$(params.EXTRACTION_PATH_CONTEXT)"
+        # Make sure the path is cleared out before cloning into it
+        if [[ -d "${OUTPUT_DIR_RELATIVE_PATH}" ]]; then
+          echo "Cleaning out existing target extraction directory"
+          rm -rf "${OUTPUT_DIR_RELATIVE_PATH}"
+        fi
+
+        mkdir -p "${OUTPUT_DIR_RELATIVE_PATH}"
+        
+        # NOTE: see subpath above
+        cp -r /var/extraction/* ${OUTPUT_DIR_RELATIVE_PATH}
+        ls -l ${OUTPUT_DIR_RELATIVE_PATH}
+
+        # existing deployment files and the python files we'll be extracting will live here
+        echo "${OUTPUT_DIR_RELATIVE_PATH}" | tr -d "\n" | tee $(results.extraction-path.path)
+
+
+
       

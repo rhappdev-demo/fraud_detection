@@ -4,7 +4,7 @@ metadata:
   name: set-build-version
 spec:
   workspaces:
-  - name: source
+  - name: workvol
     description: The folder where all the building happens
   inputs:
     params:
@@ -26,7 +26,7 @@ spec:
     # by looking into the context variable substitution.
     - name: generate-buildid
       image: gcr.io/tekton-releases/dogfooding/tkn
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.workvol.path)
       script: |
         #!/usr/bin/env sh
         echo "starting build number generation"
@@ -41,7 +41,7 @@ spec:
         echo ${BUILD_NUM} | tr -d "\n" | tee $(results.build-number.path)
     - name: get-base-version
       image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.workvol.path)
       script: |
         #!/usr/bin/env sh
         BASE_VERSION=$(inputs.params.base-version-override)

@@ -1,18 +1,17 @@
 ---
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: train-model
 spec:
   workspaces:
-  - name: source
-  inputs:
-    params:
-    - name: MODEL_NAME
-      description: the name of the python file that has the training code
-    - name: CONTEXT
-      description: relative path to the model from the root of the workspace
-      default: "."
+  - name: workvol
+  params:
+  - name: MODEL_NAME
+    description: the name of the python file that has the training code
+  - name: PATH_CONTEXT
+    description: relative path to the train model file (and supporting resources like requirements.txt) from the root of the workspace
+    default: "."
   results:
     - name: serialized-model
       description: The name of the serialized model
@@ -20,22 +19,22 @@ spec:
     - name: train
     # FIXME: Don't name the project explicitly
       image: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/seldon-builder
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.workvol.path)
       script: |
-        cd $(inputs.params.CONTEXT)
+        cd $(params.PATH_CONTEXT)
 
         # remove any previously saved models
         rm *.sav || true
         pip3 install --user -r requirements.txt
-        python $(inputs.params.MODEL_NAME)
+        python $(params.MODEL_NAME)
     - name: report
       # NOTE: Can't use minimal image because find command is needed
       image: registry.access.redhat.com/ubi8/ubi
-      workingDir: $(workspaces.source.path)
+      workingDir: $(workspaces.workvol.path)
       script: |
         #!/usr/bin/env bash
 
-        cd $(inputs.params.CONTEXT)
+        cd $(params.PATH_CONTEXT)
         MODEL_FILE=$(find . -name *.sav | head -1)
         if [[ -z "${MODEL_FILE}" ]]; then
           MODEL_FILE=$(find . -name *.pkl | head -1)

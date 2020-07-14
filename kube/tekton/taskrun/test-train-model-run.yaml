@@ -4,15 +4,15 @@ metadata:
   generateName: train-model-run-
 spec:
   workspaces:
-    - name: source
+    - name: workvol
       persistentVolumeClaim:
-        claimName: source-pvc
+        claimName: workvol-pvc
   inputs:
     params:
       - name: MODEL_NAME
-        value: "train_iris.py"
-      - name: CONTEXT
-        value: "seldon-core/getting_started/wrap-model/"
+        value: "Train.py"
+      - name: PATH_CONTEXT
+        value: "extraction"
   serviceAccountName: pipeline
   taskRef:
     kind: Task

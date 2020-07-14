@@ -4,15 +4,17 @@ metadata:
   generateName: extract-model-run-
 spec:
   workspaces:
-    - name: source
+    - name: workvol
       persistentVolumeClaim:
-        claimName: source-pvc
+        claimName: workvol-pvc
   inputs:
     params:
       - name: NOTEBOOK_NAME
         value: "frauddetection.ipynb"
-      - name: CONTEXT
-        value: "notebook"
+      - name: PATH_CONTEXT
+        value: "source/notebook"
+      - name: EXTRACTION_PATH_CONTEXT
+        value: "extraction"
       - name: EXTRACTION_IMAGE
         # FIXME: Get this from the downward API, pipeline context (when released), or centrally named location
         value: image-registry.openshift-image-registry.svc:5000/fraud-demo-cicd/extract-model:latest

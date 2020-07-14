@@ -4,7 +4,7 @@ metadata:
   name: fraud-model-dev-pipeline
 spec:
   workspaces:
-  - name: local-source
+  - name: local-workspace
   params:
     - name: GIT_REPO
       type: string
@@ -20,11 +20,11 @@ spec:
       default: "<none>"
     - name: PATH_CONTEXT
       type: string
-      description: Where the code is relative to the start of the GIT_REPO
+      description: Where the notebook (and supporting files) is relative to the start of the GIT_REPO
       default: "."
-    - name: MODEL_NAME
+    - name: NOTEBOOK_NAME
       type: string
-      description: The base name of the model that is to be trained and deployed.  This name will be used to find appropriate resources
+      description: The name of the notebook that contains the model information
   resources:
   - name: app-image
     type: image
@@ -33,8 +33,8 @@ spec:
     taskRef:
       name: git-clone
     workspaces:
-    - name: output
-      workspace: local-source
+    - name: workvol
+      workspace: local-workspace
     params:
     - name: url
       value: $(params.GIT_REPO)
@@ -43,11 +43,11 @@ spec:
     - name: message
       value: $(params.GIT_MESSAGE)
     # by setting subdirectory parameters to ""
-    # checkout will clone to the root of the local-source
+    # checkout will clone to the root of the local-workspace
     # volume, which will allow other tasks to find this directory
     # at their name for the mount point
     - name: subdirectory
-      value: ""
+      value: "source"
     - name: deleteExisting
       value: "true"
     - name: submodules
@@ -60,32 +60,52 @@ spec:
     # retries necessary if we run in parallel with a workspace
     retries: 3
     workspaces:
-    - name: source
-      workspace: local-source
+    - name: workvol
+      workspace: local-workspace
+  - name: extract-model
+    taskRef:
+      name: extract-model
+    runAfter:
+      - checkout
+    workspaces:
+    - name: workvol
+      workspace: local-workspace
+    params:
+    - name: NOTEBOOK_NAME
+      value: $(params.NOTEBOOK_NAME)
+    - name: PATH_CONTEXT
+      value: "$(tasks.checkout.results.checkout-dir)/notebook"
+    - name: EXTRACTION_PATH_CONTEXT
+      value: "extraction"
+    - name: EXTRACTION_IMAGE
+      value: image-registry.openshift-image-registry.svc:5000/demo-cicd/extract-model:latest
+    retries: 3
   - name: train-model
     taskRef:
       name: train-model
     runAfter:
-      - checkout
+      - extract-model
     # retries necessary if we run in parallel with a workspace
     retries: 3
     workspaces:
-    - name: source
-      workspace: local-source
+    - name: workvol
+      workspace: local-workspace
     params:
     - name: MODEL_NAME
-      value: "train_$(params.MODEL_NAME).py"
-    - name: CONTEXT
-      value: $(params.PATH_CONTEXT)
+      value: $(tasks.extract-model.results.train-file-name).py
+    - name: PATH_CONTEXT
+      value: $(tasks.extract-model.results.extraction-path)
   - name: build-image
     taskRef:
-      name: workspace-s2i
+      name: seldon-s2i
     runAfter:
       - train-model
       - set-build-version
     params:
+      - name: MODEL_WRAPPER
+        value: $(tasks.extract-model.results.wrapper-class-name)
       - name: PATH_CONTEXT
-        value: $(params.PATH_CONTEXT)
+        value: $(tasks.extract-model.results.extraction-path)
       - name: TLSVERIFY
         value: "false"
       - name: BUILDER_IMAGE_SCRIPTS_DIR
@@ -102,8 +122,8 @@ spec:
       - name: image
         resource: app-image
     workspaces:
-    - name: source
-      workspace: local-source
+    - name: workvol
+      workspace: local-workspace
   - name: deploy-model
     taskRef:
       name: seldon-model-deploy
@@ -111,16 +131,16 @@ spec:
       - build-image
     params:
       - name: MODEL_DEPLOY
-        value: "$(params.MODEL_NAME)_deployment.json"
+        value: "model_deployment.json"
       - name: PATH_CONTEXT
-        value: $(params.PATH_CONTEXT)
+        value: $(tasks.extract-model.results.extraction-path)
       - name: PROJECT
         value: demo-dev
       - name: MODEL_IMAGE
         value: $(tasks.build-image.results.pushed-image-tag)
     workspaces:
-    - name: source
-      workspace: local-source
+    - name: workvol
+      workspace: local-workspace
   - name: prompt-stage
     taskRef:
       name: prompt-slack

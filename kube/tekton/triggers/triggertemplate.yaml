@@ -39,4 +39,4 @@ spec:
       workspaces:
       - name: local-source
         persistentVolumeClaim:
-          claimName: source-pvc
+          claimName: workvol-pvc

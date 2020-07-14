@@ -6,6 +6,6 @@ spec:
   taskRef:
     name: set-build-version
   workspaces:
-  - name: source
+  - name: workvol
     persistentVolumeClaim:
-      claimName: source-pvc
+      claimName: workvol-pvc

@@ -1,16 +1,16 @@
 apiVersion: tekton.dev/v1alpha1
 kind: TaskRun
 metadata:
-  generateName: workspace-s2i-run-
+  generateName: seldon-s2i-run-
 spec:
   workspaces:
-  - name: source
+  - name: workvol
     persistentVolumeClaim:
-      claimName: source-pvc
+      claimName: workvol-pvc
   inputs:
     params:
       - name: PATH_CONTEXT
-        value: "seldon-core/getting_started/wrap-model"
+        value: "extraction"
       - name: TLSVERIFY
         value: "false"
       - name: BUILDER_IMAGE
@@ -23,6 +23,8 @@ spec:
         value: tr
       - name: LOGLEVEL
         value: '5'
+      - name: MODEL_WRAPPER
+        value: Wrapper
   outputs:
     resources:
       - name: image
@@ -33,5 +35,5 @@ spec:
   serviceAccountName: pipeline
   taskRef:
     kind: Task
-    name: workspace-s2i
+    name: seldon-s2i
   timeout: 1h0m0s

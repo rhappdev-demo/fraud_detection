@@ -4,13 +4,12 @@
     apiVersion: tekton.dev/v1beta1
     kind: Task
     metadata:
-      name: workspace-s2i
+      name: seldon-s2i
     spec:
       workspaces:
-      - name: source
+      - name: workvol
         description: Persistent volume where everything is getting compiled
         mountPath: /workspace/source
-        readOnly: true
       params:
       - name: PATH_CONTEXT
         description: The location of the path to run s2i from.  Set this to target to do a binary build.
@@ -34,6 +33,9 @@
         description: The tag to put on the resulting image
         default: "latest"
         type: string
+      - name: MODEL_WRAPPER
+        description: The base name of the wrapper that is to be deployed into the Seldon microservice (without the .py extension)
+        type: string
       results:
         - name: pushed-image-tag
           description: the full name of the image (including tag) that was pushed in this task
@@ -42,9 +44,66 @@
           - name: image
             type: image
       steps:
+        - name: gen-env-file
+          image: registry.access.redhat.com/ubi8/ubi-minimal:latest
+          workingDir: $(workspaces.workvol.path)
+          script: |
+            #!/usr/bin/env bash
+
+            set -e -u pipefail
+
+            ENV_FILE_OVERRIDE_PATH="$(params.PATH_CONTEXT)/environment"
+            if [[ -f "${ENV_FILE_OVERRIDE_PATH}" ]]; then
+              echo "Reading environment override from: ${ENV_FILE_OVERRIDE_PATH}"
+
+              # If there is an env_file_override, bring these environment variables into the env
+              source ${ENV_FILE_OVERRIDE_PATH}
+            fi
+
+            declare -A envDefaults=([MODEL_NAME]=$(params.MODEL_WRAPPER) [API_TYPE]=REST [SERVICE_TYPE]=MODEL [PERSISTENCE]=0)
+            for ENV_KEY in ${!envDefaults[@]}
+            do
+              echo "Current key is ${ENV_KEY}"
+              # NOTE: this weird format is to deal with unbounded variables
+              ENV_VALUE=$(eval "echo \${${ENV_KEY}:-}")
+              if [[ -z "${ENV_VALUE:-}" ]]; then
+                  echo "Setting default value for key ${ENV_KEY}"
+                  ENV_VALUE=${envDefaults[$ENV_KEY]}
+              fi
+          
+              echo "${ENV_KEY}=${ENV_VALUE}" >> /env-params/env-file
+            done
+
+            echo "Generated Env file"
+            echo "------------------------------"
+            cat /env-params/env-file
+            echo "------------------------------"
+
+            echo "Looking for .s2iignore file"
+            # FIXME: This should probably be a separate step
+            # Go into the path_context directory
+            cd "$(params.PATH_CONTEXT)"
+
+            if [[ ! -f ".s2iignore" ]]; then
+              echo "No .s2iignore file specified, creating a default one"
+              # Create an .s2iignore that ignores everything wrapper and binary
+              cat <<EOF > .s2iignore
+            *
+            !$(params.MODEL_WRAPPER).py
+            !*.sav
+            !*.pkl
+            !requirements.txt
+            EOF
+            fi
+
+            cat .s2iignore
+
+          volumeMounts:
+            - name: envparams
+              mountPath: /env-params
         - name: generate
           image: quay.io/openshift-pipeline/s2i:latest
-          workingDir: $(workspaces.source.path)
+          workingDir: $(workspaces.workvol.path)
           command:
             - /usr/local/bin/s2i
             - build
@@ -52,6 +111,8 @@
             - $(params.BUILDER_IMAGE)
             - --as-dockerfile
             - /gen-source/Dockerfile.gen
+            - --environment-file
+            - /env-params/env-file
             - --loglevel=$(params.LOGLEVEL)
             # s2i does not appear to respect the annotations on the location of the S2I 
             # paths on the image
@@ -66,6 +127,8 @@
           volumeMounts:
             - name: gen-source
               mountPath: /gen-source
+            - name: envparams
+              mountPath: /env-params
         - name: build
           image: quay.io/buildah/stable
           workingDir: /gen-source
@@ -97,4 +160,6 @@
         - name: varlibcontainers
           emptyDir: {}
         - name: gen-source
+          emptyDir: {}
+        - name: envparams
           emptyDir: {}

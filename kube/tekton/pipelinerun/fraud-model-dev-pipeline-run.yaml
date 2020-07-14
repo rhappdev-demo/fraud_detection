@@ -8,18 +8,18 @@ spec:
   params:
   # uncomment these parameters if you want to point to the internal git repo, pointing external might
   # make iteration easier
-  # - name: GIT_REPO
-  #   value: "https://github.com/hatmarch/fraud_detection_support.git"
+  - name: GIT_REPO
+    value: "https://github.com/hatmarch/fraud_detection_support.git"
   - name: PATH_CONTEXT
-    value: "models/fraud-model"
-  - name: MODEL_NAME
-    value: "Fraud"
+    value: "notebook"
+  - name: NOTEBOOK_NAME
+    value: "frauddetection.ipynb"
   resources:
   - name: app-image
     resourceRef:
       name: model-image
   workspaces:
-  - name: local-source
+  - name: local-workspace
     persistentVolumeClaim:
-      claimName: source-pvc
+      claimName: workvol-pvc
     

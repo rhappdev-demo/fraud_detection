@@ -116,6 +116,24 @@ The CI/CD toolchain that is setup by the link:scripts/create-demo.sh[create demo
 
 TODO: Write slackbot instructions
 
+== Notebook and Model Setup for Seldon ==
+
+The OpenShift Pipelines build chain is setup to facilitate the movement of an model defined in a Jupyter notebook into deployment into a SeldonCore RESTful API.  For your jupyter notebook to work with the pipeline, you need to include the following:
+
+. <NOTEBOOK>.ipynb: This is the notebook that will be operated on by the pipeline.  It must have relevant sections tagged with:
+** `Train`: for the sections that need to be included to train the model.  This must save a model pickle with extension `.sav` or `.pkl`
+** `Wrapper`: for the sections that represent the model wrapper that py that will ultimate get deployed to the seldon microservice wrapper
+. requirements.txt: The libraries that are required to train (and run in deployment) the model
+. model_deployment.[json|yaml]: A template the defines the seldon deployment
+** The token `${SELDON_IMAGE_REPLACE}` will get replaced with the image to be deployed
+. Any files or directories that are needed for the training (and inference) to operate
+
+You may optionally provide
+
+. deploy/environment: Environment variable overrides for the S2I build
+. deploy/.s2iignore: Files that should not be included in the final built image.  If not specified, this created at build time to default exclude everything but:
+** requirements.txt
+
 == Troubleshooting ==
 
 === Troubleshooting Pipeline Tasks ===

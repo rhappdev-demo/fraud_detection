@@ -15,6 +15,10 @@ spec:
     default: This is the default message
   - name: contenttype
     description: The Content-Type of the event
+  - name: notebooktobuild
+    default: The notebook to be processed by the pipeline
+  - name: notebookrelativepath
+    default: The path to 'notebooktobuild' relative to the root of the repo
   resourcetemplates:
   - apiVersion: tekton.dev/v1alpha1
     kind: PipelineRun
@@ -32,11 +36,15 @@ spec:
         value: $(params.gitrevision)
       - name: GIT_MESSAGE
         value: $(params.message)
+      - name: NOTEBOOK_NAME
+        value: $(params.notebooktobuild)
+      - name: PATH_CONTEXT
+        value: $(params.notebookrelativepath)
       resources:
       - name: app-image
         resourceRef:
           name: model-image
       workspaces:
-      - name: local-source
+      - name: local-workspace
         persistentVolumeClaim:
           claimName: workvol-pvc

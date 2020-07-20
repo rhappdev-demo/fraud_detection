@@ -208,6 +208,10 @@ command.install() {
     oc rollout latest dc/jupyterhub -n $prj
     oc rollout status dc/jupyterhub -n $prj
 
+    echo "Installing Open Policy Agent Gatekeeper"
+    # currently pegged to version 3.1.0 beta.7, per instructions here: https://github.com/redhat-octo-security/opa-example-app
+    oc apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.1.0-beta.7/deploy/gatekeeper.yaml
+    oc -n gatekeeper-system adm policy add-scc-to-user privileged -z gatekeeper-admin
   done        
 
   # Leave user in cicd project

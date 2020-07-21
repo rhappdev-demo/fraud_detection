@@ -208,10 +208,22 @@ command.install() {
     oc rollout latest dc/jupyterhub -n $prj
     oc rollout status dc/jupyterhub -n $prj
 
-    echo "Installing Open Policy Agent Gatekeeper"
-    # currently pegged to version 3.1.0 beta.7, per instructions here: https://github.com/redhat-octo-security/opa-example-app
-    oc apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/v3.1.0-beta.7/deploy/gatekeeper.yaml
-    oc -n gatekeeper-system adm policy add-scc-to-user privileged -z gatekeeper-admin
+    if [[ -z "$(oc get project gatekeeper-system 2>/dev/null)" ]]; then
+      echo "Installing Open Policy Agent Gatekeeper"
+      # currently pegged to version 3.1.0 beta.7, per instructions here: https://github.com/redhat-octo-security/opa-example-app
+      oc apply -f $DEMO_HOME/kube/opa/gatekeeper-install.yaml
+      oc -n gatekeeper-system adm policy add-scc-to-user privileged -z gatekeeper-admin
+    fi
+
+    echo "Install demo specific OPA CRDs and assets"
+    # install ModelAccuracy CRD, template, and instance
+    oc apply -f $DEMO_HOME/kube/opa/modelaccuracy-crd.yaml
+    oc apply -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml
+    sed "s/demo-cicd/$cicd_prj/g" $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml | oc apply -n $cicd_prj -f - 
+    
+    # a template installed to the cicd project for Tekton to use in reporting model accuracy
+    oc apply -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml -n $cicd_prj
+
   done        
 
   # Leave user in cicd project

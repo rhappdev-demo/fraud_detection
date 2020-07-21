@@ -1,12 +1,17 @@
 #!/bin/bash
 declare PROJECT_BASE="fraud-demo"
 declare FORCE=""
+declare REMOVE_OPA=""
 
 while (( "$#" )); do
   case "$1" in
     -p|--project-prefix)
       PROJECT_BASE=$2
       shift 2
+      ;;
+    --remove-opa)
+      REMOVE_OPA="true"
+      shift
       ;;
     -f|--force)
       FORCE="true"
@@ -19,6 +24,16 @@ while (( "$#" )); do
       break
   esac
 done
+
+opa-clean() {
+  # delete created resources before deleting the installation/namespace
+  # per the instructions here: https://github.com/open-policy-agent/gatekeeper#uninstallation
+  oc delete -f $DEMO_HOME/kube/opa/modelaccuracy-crd.yaml
+  oc delete -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml
+  oc delete -f $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml
+
+  oc delete -f $DEMO_HOME/kube/opa/gatekeeper-install.yaml
+}
 
 # Assumes proxy has been setup
 force-clean() {
@@ -34,6 +49,10 @@ force-clean() {
 # declare an array
 arrSuffix=( "dev" "stage" "cicd" )
  
+if [[ ! -z "$REMOVE_OPA" ]]; then
+  opa-clean
+fi
+
 PROXY_PID=""
 if [[ ! -z "$FORCE" ]]; then
     echo -n "opening proxy"

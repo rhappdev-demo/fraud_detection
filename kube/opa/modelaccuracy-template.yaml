@@ -1,0 +1,21 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+    name: modelaccuracy-template
+    annotations:
+        description: "Template to create a model accuracy report"
+parameters:
+- name: ACCURACY
+  description: The accuracy reported for the model in question
+- name: MODEL_NAME
+  describe: The name of the model whose accuracy we're reporting
+objects:
+- apiVersion: ai.devops.demo/v1alpha1
+  kind: ModelAccuracy
+  metadata:
+    generateName: modelaccuracy-${MODEL_NAME}-
+  spec:
+    modelName: ${MODEL_NAME}
+    accuracy: ${ACCURACY}
+labels:
+    type: accuracy-report

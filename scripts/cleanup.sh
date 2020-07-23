@@ -18,7 +18,7 @@ while (( "$#" )); do
       shift 1
       ;;
     -*|--*)
-      err "Error: Unsupported flag $1"
+      echo "Error: Unsupported flag $1"
       ;;
     *) 
       break

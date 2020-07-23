@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: validate-model-run-
+spec:
+  workspaces:
+    - name: workvol
+      persistentVolumeClaim:
+        claimName: workvol-pvc
+  inputs:
+    params:
+    - name: TRAIN_REPORT
+      value: train-report.txt
+    - name: PATH_CONTEXT
+      value: "extraction"
+    - name: MODEL_NAME
+      value: "frauddetection.ipynb"
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: validate-model

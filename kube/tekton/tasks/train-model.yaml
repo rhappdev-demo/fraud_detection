@@ -17,18 +17,33 @@ spec:
   results:
     - name: serialized-model
       description: The name of the serialized model
+    - name: train-report
+      description: The name of the training report that was outputed when the training model was created
   steps:
     - name: train
     # FIXME: Don't name the project explicitly
       image: $(params.TRAIN_IMAGE)
       workingDir: $(workspaces.workvol.path)
       script: |
+        #!/usr/bin/env bash
+
+        set -e -u -o pipefail
+
         cd $(params.PATH_CONTEXT)
 
         # remove any previously saved models
         rm *.sav || true
         pip3 install --user -r requirements.txt
-        python $(params.MODEL_NAME)
+
+        TRAIN_REPORT_FILE=train-report.txt
+        # Run the training script and write output to a file
+        python $(params.MODEL_NAME) > ${TRAIN_REPORT_FILE}
+        # cat the output for the sake of build logging
+        cat ${TRAIN_REPORT_FILE}
+
+        # save the name of the report file as a results
+        echo ${TRAIN_REPORT_FILE} | tr -d "\n" | tee $(results.train-report.path)
+
     - name: report
       # NOTE: Can't use minimal image because find command is needed
       image: registry.access.redhat.com/ubi8/ubi
@@ -47,4 +62,3 @@ spec:
         fi
 
         echo ${MODEL_FILE} | tr -d "\n" | tee $(results.serialized-model.path)
-      

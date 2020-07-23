@@ -1,0 +1,39 @@
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: validate-model
+spec:
+  workspaces:
+  - name: workvol
+  params:
+  - name: TRAIN_REPORT
+    description: The name file (relative to the path context) where the train model report is on workvol
+  - name: PATH_CONTEXT
+    description: relative path to the notebook from the root of the workspace
+    default: "."
+  - name: MODEL_NAME
+    description: name of the model that is being validated
+    default: "<unknown>"
+  steps:
+    - name: validate-accuracy-report
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: $(workspaces.workvol.path)
+      script: |
+        #!/usr/bin/env bash
+
+        set -e -o pipefail
+
+        cd $(params.PATH_CONTEXT)
+        ACCURACY=$(cat $(params.TRAIN_REPORT) | grep "Model accuracy" | sed "s/.*Model accuracy: \([[:digit:]]\)/\1/")
+
+        echo "Recording model accuracy of ${ACCURACY}"
+        # Create the ModelAccuracy report in the current project, installed policy will catch this at the creation of the CR if there is a problem
+        oc process modelaccuracy-template -p ACCURACY=${ACCURACY} -p MODEL_NAME=$(params.MODEL_NAME) | oc create -f - 
+
+        # if we're here, then the accuracy report has been accepted by the system
+        echo "Level of accuracy acceptible"
+
+
+
+      

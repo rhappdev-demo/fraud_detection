@@ -93,7 +93,13 @@ oc apply -f $DEMO_HOME/kube/odh/odh-subscription.yaml
 +
 . When you run the link:scripts/create-demo.sh[setup script] it will make sure the proper OpenDataHub (odh) elements get installed.
 
+==== Open Policy Agent (Gatekeeper) ====
 
+This demo shows how arbitrary policy decisions, such as how accurate the detection model is, can be codified.  One way this is done is to use the link:https://github.com/open-policy-agent/gatekeeper[Open Policy Agent (Gatekeeper)]
+
+The link:scripts/create-demo.sh[setup script] will install a compatible version of the gatekeeper (if it has not been installed on the cluster already) as well as all the OPA specific machinery to support mandating a model's accuracy before it can be deployed (with the help of Tekton).
+
+Approach for validating the models accuracy is inspired by the RH Summit 2020 demo whose repo can be found here link:https://github.com/redhat-octo-security/Summit2020LogoDetection/tree/master/policy[here]
 === Main Demo Setup ===
 
 NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
@@ -133,6 +139,16 @@ You may optionally provide
 . deploy/environment: Environment variable overrides for the S2I build
 . deploy/.s2iignore: Files that should not be included in the final built image.  If not specified, this created at build time to default exclude everything but:
 ** requirements.txt
+
+== Adjusting Required Accuracy Threshold ==
+
+By default the accuracy threshold is set to an impossible 100%.  This will prevent any model from being deployed.
+
+The threshold can be easily changed by running link:scripts/util-adjust-accuracy-threshold.sh[this utility script].  For example, to set the accuracy threshold to 99.87%:
+
+----
+$DEMO_HOME/scripts/util-adjust-accuracy-threshold.sh 98.87
+----
 
 == Troubleshooting ==
 
@@ -233,6 +249,15 @@ tkn pr logs -L -f
 ----
 
 == Appendix ==
+
+=== Convenience Functions ===
+
+The link:scripts/shell-setup.sh[setup script] sets up a number of aliases and shortcuts that can speed development:
+
+* *`cpr`*: cancel the currently running pipeline run (if any)
+* *`ctr`*: cancel the currently running task run (if any)
+* *`pr <pipelinerun filename>`*: Create the pipeline run represented by `<pipelinerun filename>` (must be in `kube/tekton/pipelinerun` directory) and follow logs
+* *`tskr <taskrun filename>`*: Create the TaskRun represented by `<taskrun filename>` (must be in `kube/tekton/taskrun` directory) and follow logs
 
 === Still to come ===
 . Nexus repositories for caching and storing artefacts (see link:https://help.sonatype.com/repomanager3/formats/pypi-repositories[here])

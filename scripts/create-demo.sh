@@ -194,7 +194,7 @@ command.install() {
 
     # update the notebook server config file to add a kubespawner post_start hook that will automatcially
     # clone the local gogs repo into the notebook server (persistent volume backed) filesystem
-    oc patch cm jupyterhub-cfg -n $prj --type='json' -p="$(cat $DEMO_HOME/kube/odh/jupyter/jupyterhub-cfg-patch.json)"
+    oc patch cm jupyterhub-cfg -n $prj --type='json' -p="$(cat $DEMO_HOME/kube/odh/jupyter/jupyterhub-cfg-patch.json | sed s/demo-cicd/$cicd_prj/g)"
 
     while [[ -z "$(oc get dc/jupyterhub -n $prj 2>/dev/null)" ]]; do
       echo "Waiting for jupyterhub to be available"
@@ -212,6 +212,25 @@ command.install() {
 
   done        
 
+  if [[ -z "$(oc get project gatekeeper-system 2>/dev/null)" ]]; then
+    echo "Installing Open Policy Agent Gatekeeper"
+    # currently pegged to version 3.1.0 beta.7, per instructions here: https://github.com/redhat-octo-security/opa-example-app
+    oc apply -f $DEMO_HOME/kube/opa/gatekeeper-install.yaml
+    oc -n gatekeeper-system adm policy add-scc-to-user privileged -z gatekeeper-admin
+  fi
+
+  echo "Install demo specific OPA CRDs and assets"
+  # install ModelAccuracy CRD, template, and instance
+  oc apply -f $DEMO_HOME/kube/opa/modelaccuracy-crd.yaml
+  oc apply -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml
+  sed "s/demo-cicd/$cicd_prj/g" $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml | oc apply -n $cicd_prj -f - 
+  
+  # a template installed to the cicd project for Tekton to use in reporting model accuracy
+  oc apply -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml -n $cicd_prj
+  
+  # give pipeline service account rights to operate on ai.devops.demo resources (to create model accuracy objects)
+  oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml
+ 
   # Leave user in cicd project
   oc project $cicd_prj
 

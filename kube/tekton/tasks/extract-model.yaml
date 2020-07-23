@@ -37,7 +37,7 @@ spec:
       script: |
         #!/usr/bin/env bash
 
-        set -e pipefail
+        set -e -o pipefail
 
         WORKING_DIR=/var/extraction
         echo "Moving files from source into working directory: ${WORKING_DIR}"
@@ -71,7 +71,7 @@ spec:
       script: |
         #!/bin/bash
         
-        set -u -e pipefail
+        set -u -e -o pipefail
 
         # Extract the files working in the extraction workingdir setup 
         # from the previous step
@@ -111,7 +111,7 @@ spec:
           mountPath: /var/extraction
       script: |
         #!/usr/bin/env bash
-        set -e pipefail
+        set -e -o pipefail
 
         echo "Copying files form the working folder to the shared pipeline workspace"
 

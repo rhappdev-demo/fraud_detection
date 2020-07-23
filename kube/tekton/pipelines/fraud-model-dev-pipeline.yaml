@@ -101,11 +101,26 @@ spec:
     # NOTE: TRAIN_IMAGE should be the same as the one used for the BUILDER_IMAGE
     - name: TRAIN_IMAGE
       value: image-registry.openshift-image-registry.svc:5000/demo-cicd/seldon-builder
+  - name: validate-model
+    taskRef:
+      name: validate-model
+    runAfter:
+      - train-model
+    workspaces:
+    - name: workvol
+      workspace: local-workspace
+    params:
+    - name: TRAIN_REPORT
+      value: $(tasks.train-model.results.train-report)
+    - name: MODEL_NAME
+      value: $(params.NOTEBOOK_NAME)
+    - name: PATH_CONTEXT
+      value: $(tasks.extract-model.results.extraction-path)
   - name: build-image
     taskRef:
       name: seldon-s2i
     runAfter:
-      - train-model
+      - validate-model
       - set-build-version
     params:
       - name: MODEL_WRAPPER

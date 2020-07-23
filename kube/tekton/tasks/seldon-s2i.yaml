@@ -50,7 +50,7 @@
           script: |
             #!/usr/bin/env bash
 
-            set -e -u pipefail
+            set -e -u -o pipefail
 
             ENV_FILE_OVERRIDE_PATH="$(params.PATH_CONTEXT)/environment"
             if [[ -f "${ENV_FILE_OVERRIDE_PATH}" ]]; then

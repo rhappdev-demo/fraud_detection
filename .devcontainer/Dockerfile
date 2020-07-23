@@ -2,6 +2,9 @@ FROM quay.io/mhildenb/service-mesh-demo-base:1.0
 
 USER root
 
+# install bc (for bash floating point arithmetic)
+RUN yum -y install bc
+
 # install stern
 RUN cd /usr/local/bin && \
     wget https://github.com/wercker/stern/releases/download/1.6.0/stern_linux_amd64 && \

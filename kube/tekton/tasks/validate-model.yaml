@@ -16,7 +16,7 @@ spec:
     description: name of the model that is being validated
     default: "<unknown>"
   steps:
-    - name: validate-report
+    - name: validate-accuracy-report
       image: quay.io/openshift/origin-cli:latest
       workingDir: $(workspaces.workvol.path)
       script: |
@@ -30,6 +30,9 @@ spec:
         echo "Recording model accuracy of ${ACCURACY}"
         # Create the ModelAccuracy report in the current project, installed policy will catch this at the creation of the CR if there is a problem
         oc process modelaccuracy-template -p ACCURACY=${ACCURACY} -p MODEL_NAME=$(params.MODEL_NAME) | oc create -f - 
+
+        # if we're here, then the accuracy report has been accepted by the system
+        echo "Level of accuracy acceptible"
 
 
 

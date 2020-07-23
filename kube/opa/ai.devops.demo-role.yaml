@@ -1,0 +1,28 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: ai-devops-role
+  description: Role for interacting with ai.devops.demo resources (such as ModelAccuracy reports)
+rules:
+- apiGroups:
+  - ai.devops.demo
+  resources:
+  - modelaccuracies
+  verbs:
+  - get
+  - create
+  - update
+  - patch
+  - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+    name: ai-devops-role-binding
+subjects:
+    - kind: ServiceAccount
+      name: pipeline
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: ai-devops-role

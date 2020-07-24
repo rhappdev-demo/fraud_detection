@@ -229,7 +229,7 @@ command.install() {
   oc apply -f $DEMO_HOME/kube/opa/modelaccuracy-template.yaml -n $cicd_prj
   
   # give pipeline service account rights to operate on ai.devops.demo resources (to create model accuracy objects)
-  oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml
+  oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml -n $cicd_prj
  
   # Leave user in cicd project
   oc project $cicd_prj

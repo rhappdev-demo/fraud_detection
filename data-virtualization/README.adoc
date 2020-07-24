@@ -22,7 +22,7 @@ If you don't have a login with cluster-admin role, you have to use the manual me
 .Manual Deployment
 ****
 
-==== MySQL Deployment
+MySQL Deployment:
 
 
 * use the Openshift console's Developer view to add a MySQL Database Service with persistence using Database name: mysqlsampledb; MySQL Connection Username: user; MySQL Connection Password: mypassword
@@ -37,7 +37,8 @@ oc port-forward $(oc get pods -o=jsonpath='{.items[0].metadata.name}' -l name=cm
 mysql -u user -p mypassword -h 127.0.0.1 mysqlsampledb < mysql.sql
 ----
 
-=== VDB Deployment
+VDB Deployment:
+
 Make sure you are in the project hosting your VDB, follow the steps below to deploy and configure the VDB:
 
 * change to the 'csv-rdbms-fraud' directory and change the IP address in 'src/main/resources/application.properties' entry to the MySQL service Cluster IP address:

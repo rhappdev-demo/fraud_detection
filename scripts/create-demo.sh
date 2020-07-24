@@ -226,7 +226,7 @@ command.install() {
   sed "s/demo-cicd/$cicd_prj/g" $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml | oc apply -n $cicd_prj -f - 
   
   # a template installed to the cicd project for Tekton to use in reporting model accuracy
-  oc apply -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml -n $cicd_prj
+  oc apply -f $DEMO_HOME/kube/opa/modelaccuracy-template.yaml -n $cicd_prj
   
   # give pipeline service account rights to operate on ai.devops.demo resources (to create model accuracy objects)
   oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml

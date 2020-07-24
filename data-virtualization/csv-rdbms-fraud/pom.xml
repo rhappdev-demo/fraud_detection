@@ -100,12 +100,13 @@
           <groupId>org.teiid</groupId>
           <artifactId>spring-keycloak</artifactId>
       </dependency>
+-->
       <dependency>
           <groupId>org.springframework.cloud</groupId>
           <artifactId>spring-cloud-starter-kubernetes-config</artifactId>
           <version>${version.spring-cloud-kubernetes}</version>
         </dependency>
--->
+
   </dependencies>
 
   <profiles>

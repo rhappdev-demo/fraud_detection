@@ -202,9 +202,11 @@ command.install() {
     done
 
     echo "Restarting jupyter hub to get new images"
+    # cancel existing rollout and wait (but don't stop script on oc rollout status)
     oc rollout cancel dc/jupyterhub -n $prj
-    # wait for the cancel to take effect
-    sleep 5
+    oc rollout status dc/jupyterhub -n $prj || true
+  
+    # deploy a new rollout that takes in the new images (and cfg path) 
     oc rollout latest dc/jupyterhub -n $prj
     oc rollout status dc/jupyterhub -n $prj
 

@@ -3,7 +3,7 @@
 :toc:
 :toclevels: 4
 
-=== Introduction
+== Introduction
 
 This is a Spring Boot Data Virtualization application, targeted for Openshift deployment, which implements a Virtual Database (VDB) using 2 data sources:
 
@@ -16,8 +16,14 @@ jdbc:teiid:csvrdbmsdb.1@mm://127.0.0.1:31000
 ----
 127.0.0.1 should be replaced by the VDB's service Cluster IP address.
 
-=== MySQL Deployment
-Follow the steps below to deploy and populate the MySQL database:
+== Deployment
+If you don't have a login with cluster-admin role, you have to use the manual method otherwise use the deployment script which will be describd in a subsequent section.
+
+.Manual Deployment
+****
+
+MySQL Deployment:
+
 
 * use the Openshift console's Developer view to add a MySQL Database Service with persistence using Database name: mysqlsampledb; MySQL Connection Username: user; MySQL Connection Password: mypassword
 
@@ -31,7 +37,8 @@ oc port-forward $(oc get pods -o=jsonpath='{.items[0].metadata.name}' -l name=cm
 mysql -u user -p mypassword -h 127.0.0.1 mysqlsampledb < mysql.sql
 ----
 
-=== VDB Deployment
+VDB Deployment:
+
 Make sure you are in the project hosting your VDB, follow the steps below to deploy and configure the VDB:
 
 * change to the 'csv-rdbms-fraud' directory and change the IP address in 'src/main/resources/application.properties' entry to the MySQL service Cluster IP address:
@@ -67,12 +74,60 @@ csv-rdbms-fraud'. Click 'Actions->Add Storage' selecting the following parameter
 ----
 oc rsync resources $(oc get pods -o=jsonpath='{.items[0].metadata.name}' -l app=csv-rdbms-fraud):/media/
 ----
+****
 
-=== Accessing the VDB using JDBC
-The VDB can be accessed using JDBC using the URL:
+.Automated Deployment
+****
+You must have Openshift cluster-admin role to obtain the available PVs before running the deployment script as a normal user. 
+
+IMPORTANT: Important.
+It is assumed that you are using a Macbook Pro to run the following commands. The automated script has only been tested on a Mac. The 'sed' command on the Mac used in the script has minor syntax differences from the Linux version.
+
+Login using a user with cluster-admin role and execute the following command:
+
+----
+oc get pv
+----
+
+Pick two PVs with Status 'Available' with Capacity of 50Mi or more and write down their names.
+
+Change to the directory:
+----
+/path/fraud-detection/data-virtualization
+----
+
+IMPORTANT: Important.
+You must run the script in this directory. 
+
+Invoke the script as follows:
+----
+scripts/setupDV.sh userName:userPassword ocpUrl projectName pvForMysql:pvForVdb
+----
+
+* userName:userPassword for your login account eg, developer:developer
+* ocpUrl is the Openshift server URL
+* projectName is the name you give to the project where the VDB and components are to be installed eg, vdb
+* pvForMysql:pvForVdb are the PV names you recorded earlier
+
+The script does the exact same steps in the manual method described earlier: deplopy MySQL, add storage for persistence, intialize the database with data, deploy the VDB, add storage for CSV data source persistence and add the Teiid JDBC service.
+
+If the deployment fails, delete the project and try again.
+
+****
+== Accessing the VDB using JDBC
+The VDB can be accessed using JDBC from application running on Openshift using the URL:
 ----
 jdbc:teiid:csvrdbmsdb.1@mm://127.0.0.1:31000
 ----
 127.0.0.1 should be replaced by the VDB's service Cluster IP address.
+
+To connect to the VDB from applications running on your laptop, issue the following command:
+----
+oc port-forward $(oc get pods -o=jsonpath='{.items[0].metadata.name}' -l name=csv-rdbms-fraud) 31000
+----
+This will port forward port 31000 which is the VDB JDBC port. You can access the VDB using the URL:
+----
+jdbc:teiid:csvrdbmsdb.1@mm://127.0.0.1:31000
+----
 
 

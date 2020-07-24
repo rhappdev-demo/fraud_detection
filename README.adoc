@@ -100,6 +100,7 @@ This demo shows how arbitrary policy decisions, such as how accurate the detecti
 The link:scripts/create-demo.sh[setup script] will install a compatible version of the gatekeeper (if it has not been installed on the cluster already) as well as all the OPA specific machinery to support mandating a model's accuracy before it can be deployed (with the help of Tekton).
 
 Approach for validating the models accuracy is inspired by the RH Summit 2020 demo whose repo can be found here link:https://github.com/redhat-octo-security/Summit2020LogoDetection/tree/master/policy[here]
+
 === Main Demo Setup ===
 
 NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
@@ -113,8 +114,6 @@ $DEMO_HOME/scripts/create-demo.sh install --project-prefix fraud-demo --user <US
 ----
 
 The `<USER>` and `<PASSWORD>` that is passed in is the user and password needed to create a pull secret for registry.redhat.io.  This is needed for the s2i images.  It will basically associate this secret with the pipelines service account.  NOTE: you can use a redhat registry server account name and password instead of your own login and password
-
-WARNING: This must be run *after* the corresponding development environment (e.g. fraud-demo-dev) has been created or the script will fail.  This is due to the cicd pipeline needing to update the permissions of the pipeline service account to be able to "see into and change" (e.g. edit) the dev project
 
 === Slackbot Setup ===
 
@@ -203,6 +202,10 @@ To delete all pods that have a claim on the pvc `pvc/maven-source-pvc`:
 oc delete pods $(oc describe pvc/maven-source-pvc | grep "Mounted By" -A40 | sed "s/ //ig" | sed "s/MountedBy://ig")
 ----
 
+==== Triggered Pipeline Fails to Run ====
+
+If the trigger doesn't appear to fire, then check the logs of the pod that is running that represents the webhook.  The probably is likely in the `PipelineRun` template.
+
 === Troubleshooting OpenShift Permissions ===
 
 You can use the `oc run` command to run certain containers in a given project as a service account.
@@ -213,24 +216,18 @@ For instance, this command can be used to see what kind of permissions the build
 oc run test3 --image=quay.io/openshift/origin-cli:latest --serviceaccount=builder -it --rm=true
 ----
 
-=== OpenShift Pipeline (Git) Triggers ===
+== Appendix ==
 
-Tekton allows for `EventListeners`, `TriggerTemplates`, and `TriggerBindings` to allow a git repo to hit a webhook and trigger a build.  See also link:https://github.com/tektoncd/triggers[here].  To get basic triggers going for both gogs and github run the following:
+=== Convenience Functions ===
 
-NOTE: For an example of triggers working with Tekton, see files link:https://github.com/siamaksade/tekton-cd-demo/tree/master/triggers[in the template directory of this repo]
+The link:scripts/shell-setup.sh[setup script] sets up a number of aliases and shortcuts that can speed development:
 
-NOTE: You may also want to consider link:https://github.com/tektoncd/experimental/blob/master/webhooks-extension/docs/GettingStarted.md[this tekton dashboard functionality]
+* *`cpr`*: cancel the currently running pipeline run (if any)
+* *`ctr`*: cancel the currently running task run (if any)
+* *`pr <pipelinerun filename>`*: Create the pipeline run represented by `<pipelinerun filename>` (must be in `kube/tekton/pipelinerun` directory) and follow logs
+* *`tskr <taskrun filename>`*: Create the TaskRun represented by `<taskrun filename>` (must be in `kube/tekton/taskrun` directory) and follow logs
 
-YAML resources for the pipeline created for this demo can be found in these locations:
-
-. Resources: $DEMO_HOME/kube/tekton/resources
-. Triggers: $DEMO_HOME/kube/tekton/triggers
-
-==== Triggered Pipeline Fails to Run ====
-
-If the trigger doesn't appear to fire, then check the logs of the pod that is running that represents the webhook.  The probably is likely in the `PipelineRun` template.
-
-==== Viewing (Extended) OpenShift Pipeline (Tekton) Logs ====
+=== Viewing (Extended) OpenShift Pipeline (Tekton) Logs ===
 
 You can see limited logs in the Tekton UI, but if you want the full logs, you can access these from the command line using the `tkn` command
 
@@ -248,16 +245,6 @@ To output the logs of a currently running pipelinerun (`pr`) and follow them, us
 tkn pr logs -L -f
 ----
 
-== Appendix ==
-
-=== Convenience Functions ===
-
-The link:scripts/shell-setup.sh[setup script] sets up a number of aliases and shortcuts that can speed development:
-
-* *`cpr`*: cancel the currently running pipeline run (if any)
-* *`ctr`*: cancel the currently running task run (if any)
-* *`pr <pipelinerun filename>`*: Create the pipeline run represented by `<pipelinerun filename>` (must be in `kube/tekton/pipelinerun` directory) and follow logs
-* *`tskr <taskrun filename>`*: Create the TaskRun represented by `<taskrun filename>` (must be in `kube/tekton/taskrun` directory) and follow logs
 
 === Still to come ===
 . Nexus repositories for caching and storing artefacts (see link:https://help.sonatype.com/repomanager3/formats/pypi-repositories[here])

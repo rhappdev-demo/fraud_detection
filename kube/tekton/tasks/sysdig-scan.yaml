@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: sysdig-image-scan
+spec:
+  resources:
+    inputs:
+    - name: image
+      type: image
+  params:
+    - name: IMAGE_TAG
+      description: The tag of the image resource (default is latest)
+      default: latest
+    - name: IMAGE_URL
+      description: the full image url 
+      default: latest
+    - name: SYSDIG_SECRET_NAME
+      description: The name of the secret that has the sysdig connection info
+  steps:
+    # - name: inline-scan
+    #   image: sysdiglabs/secure-inline-scan:latest
+    #   command: []
+    #   command: [ "/bin/inline_scan.sh" ]
+    #   args: [ "analyze", "-s", "https://secure.sysdig.com", "-o", "-k $SYSDIG_SECURE_TOKEN", "$IMAGE_TO_SCAN" ]
+    #   env:
+    #   - name: IMAGE_TO_SCAN
+    #     value: $(resources.inputs.image.url):$(params.IMAGE_TAG)
+    #   - name: SYSDIG_SECURE_TOKEN
+    #     valueFrom:
+    #       secretKeyRef:
+    #           name: $(params.SYSDIG_SECRET_NAME)
+    #           key: secure-token
+  - name: scan
+    image: sysdiglabs/secure-image-scanning:latest
+    env:
+    - name: IMAGE_TO_SCAN
+      value: $(params.IMAGE_URL)
+    # - name: IMAGE_TO_SCAN
+    #   value: $(resources.inputs.image.url):$(params.IMAGE_TAG)
+    - name: SYSDIG_SECURE_TOKEN
+      valueFrom:
+        secretKeyRef:
+            name: $(params.SYSDIG_SECRET_NAME)
+            key: secure-token

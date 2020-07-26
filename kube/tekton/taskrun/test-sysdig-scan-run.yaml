@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: test-sysdig-scan-run-
+spec:
+  inputs:
+    resources:
+      - name: image
+        resourceRef:
+          name: model-image
+    params:
+      - name: SYSDIG_SECRET_NAME
+        value: sysdig-secret
+      - name: IMAGE_TAG
+        value: "ttx84"
+      - name: IMAGE_URL
+        value: "default-route-openshift-image-registry.apps.cluster-fraudai-a6e6.fraudai-a6e6.example.opentlc.com/fraud-demo-dev/fraud-model:ttx84"
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: sysdig-image-scan
+  timeout: 1h0m0s

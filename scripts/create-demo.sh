@@ -232,8 +232,10 @@ command.install() {
   oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml -n $cicd_prj
  
   # Leave user in cicd project
+  echo "Setting project to $cicd_prj"
   oc project $cicd_prj
 
+  echo "Demo elements installed successfully!"
 }
 
 command.uninstall() {

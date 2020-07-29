@@ -72,6 +72,16 @@ do
         continue
     fi
 
+    if [[ $i == "dev" ]]; then
+      echo "Removing dev specific resources"
+      oc delete kfdef --all --wait=true -n ${PROJECT}
+      
+      # removing the kfdef instance uninstalls the operator but this does 
+      # not clean up the CRD
+      echo "Removing orphaned seldon crd"
+      oc delete crd/seldondeployments.machinelearning.seldon.io
+    fi
+
     # actually delete the project
     oc delete project $PROJECT
 

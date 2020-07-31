@@ -54,7 +54,7 @@ To install the demo you must first:
 Make sure you run the following command before executing any of these commands listed in this demo.
 
 ----
-source scripts/shell-setup.sh 
+. scripts/shell-setup.sh 
 ----
 ====
 

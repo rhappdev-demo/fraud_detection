@@ -2,6 +2,6 @@
     {
         "op": "replace",
         "path": "/data/jupyterhub_config.py",
-        "value": "c.KubeSpawner.lifecycle_hooks = {\n  \"postStart\": {\n    \"exec\": {\n        \"command\": [\"/bin/sh\", \"-c\", \"git clone http://gogs.demo-cicd.svc.cluster.local:3000/gogs/fraud_detection_support.git /opt/app-root/src/fraud_detection\"]\n    }\n  }\n}\n"
+        "value": "c.KubeSpawner.lifecycle_hooks = {\n  \"postStart\": {\n    \"exec\": {\n        \"command\": [\"/bin/sh\", \"-c\", \"curl http://gogs.demo-cicd.svc.cluster.local:3000/gogs/fraud_detection_support/raw/master/scripts/notebook-server-bootstrap.sh | /bin/bash -s -- http://gogs:gogs@gogs.demo-cicd.svc.cluster.local:3000/gogs/fraud_detection_support.git /opt/app-root/src/fraud_detection\"]\n    }\n  }\n}\n"
     }
 ]

@@ -183,6 +183,8 @@ command.install() {
     done
     # NOTE: If ${NOTEBOOK_IS} is used bare, the command fails.  Appears to have something to do with newlines being escaped out and 
     # breaking the underlying (web) API call
+    echo "Notebooks found for removal are:"
+    echo "${NOTEBOOK_IS}"
     oc delete -n $prj is $(echo ${NOTEBOOK_IS})
 
     # FIXME: Change image name

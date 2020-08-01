@@ -179,7 +179,7 @@ command.install() {
       sleep 1
       echo "Looking for extraneous notebooks to remove"
       # NOTE: Due to -e and pipefail, we need to add the || true to grep since grep will error if it can't find a match (!)
-      NOTEBOOK_IS=$(oc get is --no-headers -o name -n $prj | (grep s2i || true) | sed "s#^[^\/]\+\/##g")
+      NOTEBOOK_IS=$(oc get is --no-headers -o name -n $prj 2>/dev/null | (grep s2i || true) | sed "s#^[^\/]\+\/##g")
     done
     # NOTE: If ${NOTEBOOK_IS} is used bare, the command fails.  Appears to have something to do with newlines being escaped out and 
     # breaking the underlying (web) API call

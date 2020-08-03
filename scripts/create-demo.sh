@@ -25,7 +25,7 @@ err() {
 
 while (( "$#" )); do
   case "$1" in
-    install|uninstall|start)
+    install|uninstall|help)
       COMMAND=$1
       shift
       ;;
@@ -69,22 +69,22 @@ command.help() {
   cat <<-EOF
 
   Usage:
-      demo [command] [options]
+      create-demo [COMMAND] [OPTIONS]
   
   Example:
-      demo install --project-prefix mydemo
+      $DEMO_HOME/scripts/create-demo.sh install --project-prefix fraud-demo --user <USER> --password <PASSWORD> --slack-webhook-url <SLACK_WEBHOOK_URL>
   
   COMMANDS:
       install                        Sets up the demo and creates namespaces
-      uninstall                      Deletes the demo namespaces
-      help                           Help about this command
+      uninstall                      Calls cleanup script with default values
+      help 
 
   OPTIONS:
       -p|--project-prefix [string]   Prefix to be added to demo project names e.g. PREFIX-dev
       --user [string]                User name for the Red Hat registry
       --password [string]            Password for the Red Hat registry
-      --slack-webhook-url            Webhook for posting to a slack bot
-
+      --slack-webhook-url            Webhook for posting to a slack bot (pre-configured outside this script)
+      --skip-staging-pipeline        Skip installing anything into the staging project
 EOF
 }
 
@@ -179,18 +179,20 @@ command.install() {
       sleep 1
       echo "Looking for extraneous notebooks to remove"
       # NOTE: Due to -e and pipefail, we need to add the || true to grep since grep will error if it can't find a match (!)
-      NOTEBOOK_IS=$(oc get is --no-headers -o name -n $prj | (grep s2i || true) | sed "s#^[^\/]\+\/##g")
+      NOTEBOOK_IS=$(oc get is --no-headers -o name -n $prj 2>/dev/null | (grep s2i || true) | sed "s#^[^\/]*\/##g")
     done
     # NOTE: If ${NOTEBOOK_IS} is used bare, the command fails.  Appears to have something to do with newlines being escaped out and 
     # breaking the underlying (web) API call
-    oc delete -n $prj is $(echo ${NOTEBOOK_IS})
+    echo "Notebooks found for removal are:"
+    echo "${NOTEBOOK_IS}"
+    oc delete -n $prj is $(echo -n ${NOTEBOOK_IS})
 
     # FIXME: Change image name
-    oc import-image ${prj}/andy-notebook-image --from quay.io/mhildenb/andy-notebook-image --reference-policy='local' --confirm -n $prj
-    oc label is/andy-notebook-image "opendatahub.io/notebook-image"=true -n $prj
+    oc import-image ${prj}/demo-notebook-image --from quay.io/mhildenb/andy-notebook-image --reference-policy='local' --confirm -n $prj
+    oc label is/demo-notebook-image "opendatahub.io/notebook-image"=true -n $prj
 
     # Reference the notebook image as a model extraction image in the cicd namespace for Tekton
-    oc tag ${prj}/andy-notebook-image:latest ${cicd_prj}/extract-model:latest
+    oc tag ${prj}/demo-notebook-image:latest ${cicd_prj}/extract-model:latest
 
     # update the notebook server config file to add a kubespawner post_start hook that will automatcially
     # clone the local gogs repo into the notebook server (persistent volume backed) filesystem
@@ -223,6 +225,15 @@ command.install() {
   # install ModelAccuracy CRD, template, and instance
   oc apply -f $DEMO_HOME/kube/opa/modelaccuracy-crd.yaml
   oc apply -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml
+
+  # wait for the AIModelAccuracyThreshold CRD to be installed
+  # before we move on to the next step
+  echo "Waiting for AIModelAccuracyThreshold CRD to be installed"
+  while [[ -z "$(oc explain AIModelAccuracyThreshold 2>/dev/null)" ]]; do
+    echo -n .
+    sleep 1
+  done
+
   sed "s/demo-cicd/$cicd_prj/g" $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml | oc apply -n $cicd_prj -f - 
   
   # a template installed to the cicd project for Tekton to use in reporting model accuracy
@@ -232,12 +243,15 @@ command.install() {
   oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml -n $cicd_prj
  
   # Leave user in cicd project
+  echo "Setting project to $cicd_prj"
   oc project $cicd_prj
 
+  echo "Demo elements installed successfully!"
 }
 
 command.uninstall() {
-  $SCRIPT_DIR/cleanup.sh -p $PRJ_PREFIX
+  echo "Removing demo from cluster"
+  $SCRIPT_DIR/cleanup.sh -p $PRJ_PREFIX --remove-opa
 }
 
 main() {

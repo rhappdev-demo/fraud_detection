@@ -145,11 +145,30 @@ spec:
     workspaces:
     - name: workvol
       workspace: local-workspace
+  - name: scan-image
+    taskRef:
+      name: sysdig-image-scan
+    runAfter:
+      - build-image
+    params:
+      - name: REPORT_CONTEXT
+        value: scan-results
+      - name: SYSDIG_SECRET_NAME
+        value: sysdig-secret
+      - name: IMAGE_TAG
+        value: $(tasks.set-build-version.results.build-number)
+    resources:
+      inputs:
+      - name: image
+        resource: app-image
+    workspaces:
+    - name: workvol
+      workspace: local-workspace
   - name: deploy-model
     taskRef:
       name: seldon-model-deploy
     runAfter:
-      - build-image
+      - scan-image
     params:
       - name: MODEL_DEPLOY
         value: "model_deployment.json"

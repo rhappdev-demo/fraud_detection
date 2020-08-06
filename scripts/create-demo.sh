@@ -45,6 +45,10 @@ while (( "$#" )); do
       slack_webhook_url=$2
       shift 2
       ;;
+    --sysdig-secure-token)
+      sysdig_secure_token=$2
+      shift 2
+      ;;
     --skip-staging-pipeline)
       SKIP_STAGING_PIPELINE=$1
       shift 1
@@ -84,6 +88,7 @@ command.help() {
       --user [string]                User name for the Red Hat registry
       --password [string]            Password for the Red Hat registry
       --slack-webhook-url            Webhook for posting to a slack bot (pre-configured outside this script)
+      --sysgid-secure-token          Sysdig Secure API Token (necessary for image scan)
       --skip-staging-pipeline        Skip installing anything into the staging project
 EOF
 }
@@ -241,7 +246,14 @@ command.install() {
   
   # give pipeline service account rights to operate on ai.devops.demo resources (to create model accuracy objects)
   oc apply -f $DEMO_HOME/kube/opa/ai.devops.demo-role.yaml -n $cicd_prj
- 
+
+  echo "Installing sysdig scanning assets"
+  if [[ -n "${sysdig_secure_token}" ]]; then
+    oc create secret generic sysdig-secret --from-literal secure-token="${sysdig_secure_token}"
+  else
+    echo "WARNING: No token specified for sysdig.  Image scanning will not work properly"
+  fi
+
   # Leave user in cicd project
   echo "Setting project to $cicd_prj"
   oc project $cicd_prj

@@ -3,42 +3,57 @@ kind: Task
 metadata:
   name: sysdig-image-scan
 spec:
+  workspaces:
+    - name: workvol
   resources:
     inputs:
     - name: image
       type: image
   params:
+    - name: REPORT_CONTEXT
+      description: The subdirectory of the workspace to put the generated report
+      default: "."
     - name: IMAGE_TAG
       description: The tag of the image resource (default is latest)
-      default: latest
-    - name: IMAGE_URL
-      description: the full image url 
       default: latest
     - name: SYSDIG_SECRET_NAME
       description: The name of the secret that has the sysdig connection info
   steps:
-    # - name: inline-scan
-    #   image: sysdiglabs/secure-inline-scan:latest
-    #   command: []
-    #   command: [ "/bin/inline_scan.sh" ]
-    #   args: [ "analyze", "-s", "https://secure.sysdig.com", "-o", "-k $SYSDIG_SECURE_TOKEN", "$IMAGE_TO_SCAN" ]
-    #   env:
-    #   - name: IMAGE_TO_SCAN
-    #     value: $(resources.inputs.image.url):$(params.IMAGE_TAG)
-    #   - name: SYSDIG_SECURE_TOKEN
-    #     valueFrom:
-    #       secretKeyRef:
-    #           name: $(params.SYSDIG_SECRET_NAME)
-    #           key: secure-token
-  - name: scan
-    image: sysdiglabs/secure-image-scanning:latest
-    env:
-    - name: IMAGE_TO_SCAN
-      value: $(params.IMAGE_URL)
-    # - name: IMAGE_TO_SCAN
-    #   value: $(resources.inputs.image.url):$(params.IMAGE_TAG)
-    - name: SYSDIG_SECURE_TOKEN
-      valueFrom:
-        secretKeyRef:
-            name: $(params.SYSDIG_SECRET_NAME)
-            key: secure-token
+    - name: prepare
+      image: registry.access.redhat.com/ubi8/ubi-minimal:latest
+      workingDir: $(workspaces.workvol.path)
+      script: |
+        #!/usr/bin/env bash
+        set -e -o pipefail
+
+        # NOTE: already at the workspace root
+        if [[ ! -d "$(params.REPORT_CONTEXT)" ]]; then
+          echo "Creating missing report directory at $(params.REPORT_CONTEXT)"
+          mkdir -p "$(params.REPORT_CONTEXT)"
+        fi
+    - name: inline-scan
+      image: quay.io/mhildenb/sysdig-inline-scan:1.1
+      resources:
+        limits:
+          cpu: 1.5
+        requests:
+          cpu: 1
+      args: 
+        - skopeo-analyze
+        - -k 
+        - $(SYSDIG_SECURE_API_TOKEN)
+        - -R
+        - /workspace
+        - -auth_file 
+        # $HOME is set by tekton.  Tekton puts all the tokens and authfiles available to 
+        # the current service account there
+        - "$(HOME)/.docker/config.json"
+        - $(IMAGE_TO_SCAN)
+      env:
+      - name: IMAGE_TO_SCAN
+        value: "$(resources.inputs.image.url):$(params.IMAGE_TAG)" 
+      - name: SYSDIG_SECURE_API_TOKEN
+        valueFrom:
+          secretKeyRef:
+              name: $(params.SYSDIG_SECRET_NAME)
+              key: secure-token

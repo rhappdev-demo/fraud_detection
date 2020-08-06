@@ -3,18 +3,29 @@ kind: TaskRun
 metadata:
   generateName: test-sysdig-scan-run-
 spec:
+  workspaces:
+    - name: workvol
+      persistentVolumeClaim:
+        claimName: workvol-pvc
   inputs:
     resources:
       - name: image
         resourceRef:
           name: model-image
+        # resourceSpec:
+        #   params:
+        #     - name: url
+        #   # NOTE: This file is pre-processed by the cicd installation script and replaces "demo-dev" with the proper
+        #   # Demo Dev project name
+        #       value: quay.io/mhildenb/homemade-serverless-java
+        #  type: image
     params:
+      - name: REPORT_CONTEXT
+        value: scan-results
       - name: SYSDIG_SECRET_NAME
         value: sysdig-secret
       - name: IMAGE_TAG
-        value: "ttx84"
-      - name: IMAGE_URL
-        value: "default-route-openshift-image-registry.apps.cluster-fraudai-a6e6.fraudai-a6e6.example.opentlc.com/fraud-demo-dev/fraud-model:ttx84"
+        value: "2dxdp"
   serviceAccountName: pipeline
   taskRef:
     kind: Task

@@ -8,6 +8,7 @@ declare SKIP_STAGING_PIPELINE=""
 declare USER=""
 declare PASSWORD=""
 declare slack_webhook_url=""
+declare sysdig_secure_token=""
 
 valid_command() {
   local fn=$1; shift

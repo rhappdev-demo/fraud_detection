@@ -249,7 +249,7 @@ command.install() {
 
   echo "Installing sysdig scanning assets"
   if [[ -n "${sysdig_secure_token}" ]]; then
-    oc create secret generic sysdig-secret --from-literal secure-token="${sysdig_secure_token}"
+    oc create secret generic sysdig-secret -n $cicd_prj --from-literal secure-token="${sysdig_secure_token}"
   else
     echo "WARNING: No token specified for sysdig.  Image scanning will not work properly"
   fi

@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: seldon-model-deploy
@@ -6,21 +6,20 @@ spec:
   workspaces:
     - name: workvol
       description: Where the model was getting built from
-  inputs:
-    params:
-      - name: MODEL_DEPLOY
-        type: string 
-        description: The name of the Seldon Model (in json or yaml format) to be deployed.
-      - name: PATH_CONTEXT
-        type: string
-        description: The root of the deployment directory
-        default: "."
-      - name: PROJECT
-        type: string
-        description: The name of the project to deploy the model into
-      - name: MODEL_IMAGE
-        type: string
-        description: The name of the model image that should be deployed
+  params:
+    - name: MODEL_DEPLOY
+      type: string 
+      description: The name of the Seldon Model (in json or yaml format) to be deployed.
+    - name: PATH_CONTEXT
+      type: string
+      description: The root of the deployment directory
+      default: "."
+    - name: PROJECT
+      type: string
+      description: The name of the project to deploy the model into
+    - name: MODEL_IMAGE
+      type: string
+      description: The name of the model image that should be deployed
   steps:
     - name: run-commands
       workingDir: $(workspaces.workvol.path)
@@ -30,7 +29,7 @@ spec:
         set -e -o pipefail
 
         # First find the deployment file
-        MODEL_DEPLOY_FILE=$(inputs.params.PATH_CONTEXT)/$(inputs.params.MODEL_DEPLOY)
+        MODEL_DEPLOY_FILE=$(params.PATH_CONTEXT)/$(params.MODEL_DEPLOY)
         if [[ ! -f ${MODEL_DEPLOY_FILE} ]]; then
           echo "Could not find ${MODEL_DEPLOY_FILE} in $(workspaces.workvol.path), here is what is in that directory:"
           ls -l
@@ -38,15 +37,20 @@ spec:
         fi
 
         # replace the token in the MODEL_DEPLOY with the MODEL_IMAGE
-        REPL_MODEL_DEPLOY_PATH="/tmp/$(inputs.params.MODEL_DEPLOY)"
-        cat ${MODEL_DEPLOY_FILE} | sed 's#\${SELDON_IMAGE_REPLACE}#$(inputs.params.MODEL_IMAGE)#g' > ${REPL_MODEL_DEPLOY_PATH}
+        REPL_MODEL_DEPLOY_PATH="/tmp/$(params.MODEL_DEPLOY)"
+        cat ${MODEL_DEPLOY_FILE} | sed 's#\${SELDON_IMAGE_REPLACE}#$(params.MODEL_IMAGE)#g' > ${REPL_MODEL_DEPLOY_PATH}
         echo "Deployment is: "
         cat ${REPL_MODEL_DEPLOY_PATH}
 
-        TARGET_PROJECT=$(inputs.params.PROJECT)
+        TARGET_PROJECT=$(params.PROJECT)
         # actually apply the deployment
         # Get the name of the deployment as output from the oc application
         SELDON_DEPLOY_NAME=$(oc apply -f ${REPL_MODEL_DEPLOY_PATH} -o jsonpath='{.metadata.name}' -n ${TARGET_PROJECT}) 
+        echo "Waiting for $SELDON_DEPLOY_NAME to appear."
+        while [[ -z "$(oc get deployment -l seldon-deployment-id="${SELDON_DEPLOY_NAME}" -n ${TARGET_PROJECT} 2>/dev/null)" ]]; do
+          echo -n "."
+          sleep 1
+        done
         DEPLOYMENT=$(oc get deployment -l seldon-deployment-id="${SELDON_DEPLOY_NAME}" -n ${TARGET_PROJECT} -o jsonpath='{.items[0].metadata.name}')
 
         echo "Waiting for deployment ${DEPLOYMENT} to complete"

@@ -103,16 +103,25 @@ The CI/CD toolchain that is setup by the link:scripts/create-demo.sh[create demo
 
 TODO: Write slackbot instructions
 
+==== Sysdig Setup ====
+
+Image vulnerability scanning is done using Sysdig inline image scanning.  For the demo to work it requires:
+
+1. That the user have an active Sysdig Secure API token
+2. Have either setup the default policy list to match what you would like scanned for the demo, or the (internal) registry has been registered with Sysdig and policies assigned
+
+TODO: Writeup instructions for Sysdig configuration.
+
 === Main Demo Setup ===
 
 NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
 
 Run the following script to setup the entire cicd project (it will create a project called `<PROJECT_PREFIX>-cicd` (where `<PROJECT_PREFIX>` is the value passed to --project-prefix in the command below) if it doesn't exist already to install all the artifacts into.
 
-Prior to running this script you will need your login details for access.redhat.com to get a private registries and you will also need the webhook url for the Slackbot you setup <<Slackbot Setup,in the prerequisites section>>.
+Prior to running this script you will need your login details for access.redhat.com to get a private registries and you will also need the webhook url for the Slackbot you setup <<Slackbot Setup,in the prerequisites section>> and an API token for Sysdig Secure as per <<Sysdig Setup, the Sysdig section>>
 
 ----
-$DEMO_HOME/scripts/create-demo.sh install --project-prefix fraud-demo --user <USER> --password <PASSWORD> --slack-webhook-url <SLACK_WEBHOOK_URL>
+$DEMO_HOME/scripts/create-demo.sh install --project-prefix fraud-demo --user "${USER}" --password "${PASSWORD}" --slack-webhook-url "${SLACK_WEBHOOK_URL}" --sysdig-secure-token "${SYSDIG_SECURE_API_TOKEN}"
 ----
 
 The `<USER>` and `<PASSWORD>` that is passed in is the user and password needed to create a pull secret for registry.redhat.io.  This is needed for the s2i images.  It will basically associate this secret with the pipelines service account.  NOTE: you can use a redhat registry server account name and password instead of your own login and password

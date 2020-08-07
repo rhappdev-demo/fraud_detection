@@ -146,6 +146,14 @@ spec:
     - name: workvol
       workspace: local-workspace
   - name: scan-image
+    # FIXME: Unfortunately, we can't skip this step and have the rest of the pipeline run in this version of tekton
+    # See feature request here: https://github.com/tektoncd/pipeline/issues/1023
+    conditions:
+      - conditionRef: secret-exists
+        params:
+        - name: SECRET_NAME
+          value: sysdig-secret
+    # END FIXME
     taskRef:
       name: sysdig-image-scan
     runAfter:

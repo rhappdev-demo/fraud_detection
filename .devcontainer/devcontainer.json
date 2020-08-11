@@ -20,8 +20,9 @@
 		"vscjava.vscode-java-pack",
 		"redhat.vscode-xml",
 		"joaompinto.asciidoctor-vscode",
-		"redhat.vscode-quarkus",
-		"ggrebert.quarkus-snippets",
+		"ms-python.python",
+		// "redhat.vscode-quarkus",
+		// "ggrebert.quarkus-snippets",
 		"humao.rest-client"
 	],
 	"settings":{

@@ -116,12 +116,12 @@ TODO: Writeup instructions for Sysdig configuration.
 
 NOTE: This demo is heavily influenced by link:https://medium.com/analytics-vidhya/manage-ml-deployments-like-a-boss-deploy-your-first-ab-test-with-sklearn-kubernetes-and-b10ae0819dfe[this post] which walks through a hello-world of sorts with Seldon
 
-Run the following script to setup the entire cicd project (it will create a project called `<PROJECT_PREFIX>-cicd` (where `<PROJECT_PREFIX>` is the value passed to --project-prefix in the command below) if it doesn't exist already to install all the artifacts into.
+Run the following script to setup the entire cicd project (it will create a project called `$PROJECT_PREFIX-cicd` (where `PROJECT_PREFIX` is the value passed to --project-prefix in the command below, for instance 'fraud-demo') if it doesn't exist already to install all the artifacts into.
 
 Prior to running this script you will need your login details for access.redhat.com to get a private registries and you will also need the webhook url for the Slackbot you setup <<Slackbot Setup,in the prerequisites section>> and an API token for Sysdig Secure as per <<Sysdig Setup, the Sysdig section>>
 
 ----
-$DEMO_HOME/scripts/create-demo.sh install --project-prefix fraud-demo --user "${USER}" --password "${PASSWORD}" --slack-webhook-url "${SLACK_WEBHOOK_URL}" --sysdig-secure-token "${SYSDIG_SECURE_API_TOKEN}"
+$DEMO_HOME/scripts/create-demo.sh install --project-prefix ${PROJECT_PREFIX} --user "${USER}" --password "${PASSWORD}" --slack-webhook-url "${SLACK_WEBHOOK_URL}" --sysdig-secure-token "${SYSDIG_SECURE_API_TOKEN}"
 ----
 
 The `<USER>` and `<PASSWORD>` that is passed in is the user and password needed to create a pull secret for registry.redhat.io.  This is needed for the s2i images.  It will basically associate this secret with the pipelines service account.  NOTE: you can use a redhat registry server account name and password instead of your own login and password
@@ -158,23 +158,51 @@ pr $DEMO_HOME/kube/tekton/pipelinerun/fraud-model-dev-pipeline-run.yaml
 ** If you used the slack webhook, you should see it post to your corresponding slack channel
 +
 . To test that the endpoint is up and able to accept requests you can run the following:
-** NOTE: the input is currently just garbage data that's in the shape the endpoint expects
 +
 ----
-oc port-forward -n fraud-demo-dev svc/fraud-detect-classifier-fraud-detect-classifier 8080:9000
+oc port-forward -n ${PROJECT_PREFIX}-dev svc/fraud-detect-classifier-fraud-detect-classifier 8080:9000
 
-curl -g http://localhost:8080/predict \
-    --data-urlencode 'json={"data":{"names":["sepallengthcm","sepalwidthcm","petallengthcm","petalwidthcm"],"tensor":{"shape":[1,7],"values":[5.1,3.5,1.4,0.2,0.2,1.0,1.7]}}}'
+curl -g http://localhost:8080/predict -d 'json={"data":{"ndarray":[[-4.304597,  4.732795, -2.447469,  2.101344, -4.609628, -6.079337,  6.739384]]}}'
 ----
+
+.Understanding Seldon Output
+====
+
+Here is an example of what the output would look like.  Note that it varies from run to run due to how the train data is randomized and the vicissitudes of how the RandomForestClassifier is trained:
+
+----
+{
+  "data": {
+    "names": [
+      "V3", 
+      "V4", 
+      "V10", 
+      "V11", 
+      "V12", 
+      "V14", 
+      "V17"
+    ], 
+    "ndarray": [
+      [
+        0.2905963568907551, 
+        0.709403643109245
+      ]
+    ]
+  }
+}
+----
+
+The main part of the output is the `ndarray` which has two values.  The first value is the probability (out of 1) that this is a fraudulent transaction and the second value is the probability (out of 1) that is a legit transaction.
+====
 
 == Uninstalling the Demo ==
 
 To remove the demo from the cluster [red]#you should refrain from simply deleting the project# as it will result in finalizers getting stuck and resources getting orphaned on the cluster and possibly making it impossible to install the demo on the cluster again.
 
-Instead, call the following to use the default settings to uninstall the demo from your cluster (assuming the project-prefix for your demo was `fraud-demo`):
+Instead, call the following to use the default settings to uninstall the demo from your cluster (assuming you've already assigned `PROJECT_PREFIX` to something like 'fraud-demo'):
 
 ----
-$DEMO_HOME/scripts/create-demo.sh uninstall --project-prefix fraud-demo
+$DEMO_HOME/scripts/create-demo.sh uninstall --project-prefix ${PROJECT_PREFIX}
 ----
 
 If despite this your projects get stuck in terminating or need to adjust the parameters passed to the link:scripts/cleanup.sh[cleanup script], you can inspect it and call it directly:

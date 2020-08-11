@@ -2,6 +2,7 @@
 declare PROJECT_BASE="fraud-demo"
 declare FORCE=""
 declare REMOVE_OPA=""
+declare REMOVE_SELDON=""
 
 while (( "$#" )); do
   case "$1" in
@@ -11,6 +12,10 @@ while (( "$#" )); do
       ;;
     --remove-opa)
       REMOVE_OPA="true"
+      shift
+      ;;
+    --remove-seldon)
+      REMOVE_SELDON="true"
       shift
       ;;
     -f|--force)
@@ -35,6 +40,29 @@ opa-clean() {
   oc delete -f $DEMO_HOME/kube/opa/gatekeeper-install.yaml
 }
 
+uninstall-operator() {
+  local OPERATOR_NAME=$1
+
+  local CURRENT_OPERATOR_CSV=$(oc get sub ${OPERATOR_NAME} -n openshift-operators -o yaml | grep "currentCSV: ${OPERATOR_NAME}" | sed "s/.*currentCSV: //")
+
+  oc delete sub ${OPERATOR_NAME} -n openshift-operators
+  oc delete csv ${CURRENT_OPERATOR_CSV} -n openshift-operators
+}
+
+seldon-clean() {
+    # uninstall the operator based on our subscription
+    echo "Unsubscribing from the seldon operator"
+    uninstall-operator seldon-operator
+
+    # unsubscribing from the operator does not appear to clean up the CRD
+    echo "Removing orphaned seldon crd"
+    oc delete crd/seldondeployments.machinelearning.seldon.io
+
+    # cleanup and install plans 
+    echo "Removing orphaned install plans"
+    oc delete ip -n openshift-operators $(oc get ip -A | grep seldon | awk '{print $2}')
+}
+
 # Assumes proxy has been setup
 force-clean() {
     declare NAMESPACE=$1
@@ -49,8 +77,12 @@ force-clean() {
 # declare an array
 arrSuffix=( "dev" "stage" "cicd" )
  
-if [[ ! -z "$REMOVE_OPA" ]]; then
+if [[ -n "$REMOVE_OPA" ]]; then
   opa-clean
+fi
+
+if [[ -n "$REMOVE_SELDON" ]]; then
+  seldon-clean
 fi
 
 PROXY_PID=""
@@ -75,11 +107,6 @@ do
     if [[ $i == "dev" ]]; then
       echo "Removing dev specific resources"
       oc delete kfdef --all --wait=true -n ${PROJECT}
-      
-      # removing the kfdef instance uninstalls the operator but this does 
-      # not clean up the CRD
-      echo "Removing orphaned seldon crd"
-      oc delete crd/seldondeployments.machinelearning.seldon.io
     fi
 
     # actually delete the project

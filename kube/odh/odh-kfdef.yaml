@@ -14,11 +14,12 @@ spec:
           name: manifests
           path: odh-common
       name: odh-common
-    - kustomizeConfig:
-        repoRef:
-          name: manifests
-          path: odhseldon/cluster
-      name: odhseldon
+      #NOTE: See README.adoc for why we don't want the seldon installation that comes with odh
+    # - kustomizeConfig:
+    #     repoRef:
+    #       name: manifests
+    #       path: odhseldon/cluster
+    #   name: odhseldon
     # - kustomizeConfig:
     #     repoRef:
     #       name: manifests

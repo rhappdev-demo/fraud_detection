@@ -81,7 +81,7 @@ command.help() {
   
   COMMANDS:
       install                        Sets up the demo and creates namespaces
-      uninstall                      Calls cleanup script with default values
+      uninstall                      Calls cleanup script with parameters to cleanup OPA
       help 
 
   OPTIONS:
@@ -263,7 +263,7 @@ command.install() {
 }
 
 command.uninstall() {
-  echo "Removing demo from cluster"
+  echo "Removing demo from cluster (and OPA)"
   $SCRIPT_DIR/cleanup.sh -p $PRJ_PREFIX --remove-opa
 }
 

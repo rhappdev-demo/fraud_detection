@@ -5,7 +5,7 @@ metadata:
   name: slack-triggerbinding
 spec:
   params:
-  - name: image-label
+  - name: payload
     value: $(body.slack.actions[0].value)
   - name: user-name
     value: $(body.slack.user.username)

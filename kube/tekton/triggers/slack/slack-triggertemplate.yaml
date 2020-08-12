@@ -5,19 +5,23 @@ metadata:
   name: slack-trigger-template
 spec:
   params:
-  - name: image-label
-    description: The image label to promote to staging
-    default: "later"
+  - name: payload
+    description: The payload from the slack prompting
+    default: "unknown"
   resourcetemplates:
   - apiVersion: tekton.dev/v1alpha1
     kind: PipelineRun
     metadata:
-      generateName: fraud-model-deploy-stage-pipeline-triggered-run-
+      generateName: fraud-model-stage-pipeline-triggered-run-
       labels:
-        tekton.dev/pipeline: fraud-model-deploy-stage-pipeline
+        tekton.dev/pipeline: fraud-model-stage-pipeline
     spec:
       pipelineRef:
-        name: fraud-model-deploy-stage
+        name: fraud-model-stage-pipeline
       params:
-      - name: IMAGE_TAG
-        value: $(params.image-label)
+      - name: PAYLOAD
+        value: $(params.payload)
+      resources:
+      - name: app-image
+        resourceRef:
+          name: model-image

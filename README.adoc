@@ -370,4 +370,3 @@ tkn pr logs -L -f
 === Still to come ===
 . Nexus repositories for caching and storing artefacts (see link:https://help.sonatype.com/repomanager3/formats/pypi-repositories[here])
 . Sonarqube support for python (for example link:https://www.sonarqube.org/features/multi-languages/python/[here]
-. Set the appropriate default branch in gogs (for nested project)

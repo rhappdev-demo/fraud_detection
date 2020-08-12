@@ -133,6 +133,7 @@ command.install() {
 
   info "Deploying pipeline, tasks, and workspaces to $cicd_prj namespace"
   oc apply -f $DEMO_HOME/kube/tekton/tasks --recursive -n $cicd_prj
+  oc apply -f $DEMO_HOME/kube/tekton/conditions --recursive -n $cicd_prj
   oc apply -f $DEMO_HOME/kube/tekton/config -n $cicd_prj
   oc apply -f $DEMO_HOME/kube/tekton/pipelines/pipeline-workvol-pvc.yaml -n $cicd_prj
   

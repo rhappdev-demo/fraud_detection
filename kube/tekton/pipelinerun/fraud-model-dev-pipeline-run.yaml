@@ -23,4 +23,5 @@ spec:
   - name: local-workspace
     persistentVolumeClaim:
       claimName: workvol-pvc
+  timeout: 1h0m0s
     

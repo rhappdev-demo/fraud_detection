@@ -150,6 +150,7 @@ command.install() {
     info "Skipping deploy to staging pipeline at user's request"
   fi
   sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-dev-pipeline.yaml | sed "s/demo-cicd/$cicd_prj/g" | oc apply -f - -n $cicd_prj
+  sed "s/demo-stage/$stage_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-stage-pipeline.yaml | sed "s/demo-cicd/$cicd_prj/g" | oc apply -f - -n $cicd_prj
   
   # Install pipeline resources
   sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/resources/model-image.yaml | oc apply -f - -n $cicd_prj

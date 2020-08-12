@@ -1,0 +1,39 @@
+# WARNING: DO NOT kubectl apply -f this file directly.  It first needs variable substitution like so:
+# sed "s/demo-stage/$stage_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-stage-pipeline.yaml | sed "s/demo-cicd/$cicd_prj/g" | oc apply -f - -n $cicd_prj
+# where dev_prj is set to point to your dev project and cicd_prj is set to point to your cicd project
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: fraud-model-stage-pipeline
+spec:
+  params:
+    - name: PAYLOAD
+      default: ""
+      type: string
+      description: JSON payload from a webhook
+  resources:
+  - name: app-image
+    type: image
+  tasks:
+  - name: unpack-payload
+    taskRef:
+      name: unpack-slack-payload
+    params:
+      - name: payload
+        value: $(params.PAYLOAD)
+    resources:
+      inputs:
+      - name: image
+        resource: app-image
+  - name: deploy-model
+    taskRef:
+      name: seldon-model-deploy
+    runAfter:
+    - unpack-payload
+    params:
+      - name: MODEL_DEPLOY_URL
+        value: "$(tasks.unpack-payload.results.model-deploy-url)"
+      - name: PROJECT
+        value: demo-stage
+      - name: MODEL_IMAGE
+        value: $(tasks.unpack-payload.results.image-tag)

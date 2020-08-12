@@ -42,6 +42,8 @@ spec:
   results:
     - name: checkout-dir
       description: The subdirectory of the workspace that the root of the git repo has been checked out to
+    - name: raw-url
+      description: The URL pointing to top of the directory for getting raw versions of files at this revision
   steps:
   - name: clone
     image: gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:latest
@@ -84,3 +86,9 @@ spec:
       fi
 
       echo ${CHECKOUT_DIR} | tr -d "\n" | tee $(results.checkout-dir.path)
+
+      # create the raw URL
+      URL_BASE=$(echo $(params.url) | sed "s#\(.*\)\.git#\1#")
+      echo "Raw URL_BASE is ${URL_BASE}"
+      RAW_URL="${URL_BASE}/raw/$(params.revision)"
+      echo ${RAW_URL} | tr -d "\n" | tee $(results.raw-url.path)

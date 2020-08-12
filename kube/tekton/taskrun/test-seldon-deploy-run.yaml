@@ -3,20 +3,14 @@ kind: TaskRun
 metadata:
   generateName: test-seldon-deploy-run-
 spec:
-  workspaces:
-    - name: workvol
-      persistentVolumeClaim:
-        claimName: workvol-pvc
   inputs:
     params:
-      - name: MODEL_DEPLOY
-        value: 'model_deployment.json'
+      - name: MODEL_DEPLOY_URL
+        value: 'http://gogs:3000/gogs/fraud_detection_support/raw/master/notebook/deploy/model_deployment.json'
       - name: PROJECT
         value: fraud-demo-dev
       - name: MODEL_IMAGE
-        value: 'image-registry.openshift-image-registry.svc:5000/fraud-demo-dev/fraud-model:tr'
-      - name: PATH_CONTEXT
-        value: "extraction"
+        value: 'image-registry.openshift-image-registry.svc:5000/fraud-demo-dev/fraud-model:nvhwt'
   serviceAccountName: pipeline
   taskRef:
     kind: Task

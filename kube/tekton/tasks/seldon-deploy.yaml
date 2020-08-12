@@ -3,17 +3,10 @@ kind: Task
 metadata:
   name: seldon-model-deploy
 spec:
-  workspaces:
-    - name: workvol
-      description: Where the model was getting built from
   params:
-    - name: MODEL_DEPLOY
+    - name: MODEL_DEPLOY_URL
       type: string 
-      description: The name of the Seldon Model (in json or yaml format) to be deployed.
-    - name: PATH_CONTEXT
-      type: string
-      description: The root of the deployment directory
-      default: "."
+      description: The URL of the model that is to be deployed.  This usually refers into the raw code of a git repo
     - name: PROJECT
       type: string
       description: The name of the project to deploy the model into
@@ -22,22 +15,22 @@ spec:
       description: The name of the model image that should be deployed
   steps:
     - name: run-commands
-      workingDir: $(workspaces.workvol.path)
       image: quay.io/openshift/origin-cli:latest
       script: |
         #!/usr/bin/env bash
         set -e -o pipefail
 
         # First find the deployment file
-        MODEL_DEPLOY_FILE=$(params.PATH_CONTEXT)/$(params.MODEL_DEPLOY)
-        if [[ ! -f ${MODEL_DEPLOY_FILE} ]]; then
-          echo "Could not find ${MODEL_DEPLOY_FILE} in $(workspaces.workvol.path), here is what is in that directory:"
-          ls -l
+        MODEL_DEPLOY_FILE=/tmp/seldon_deploy.json
+        HTTP_RESULT=$(curl -sL -w "%{http_code}" $(params.MODEL_DEPLOY_URL) -o ${MODEL_DEPLOY_FILE})
+        if [[ ${HTTP_RESULT} != 200 ]]; then
+          echo "Could not find model deployment template at $(params.MODEL_DEPLOY_URL).  HTTP result code was ${HTTP_RESULT}"
           exit 1
         fi
 
         # replace the token in the MODEL_DEPLOY with the MODEL_IMAGE
-        REPL_MODEL_DEPLOY_PATH="/tmp/$(params.MODEL_DEPLOY)"
+        REPL_MODEL_DEPLOY_PATH="/tmp/seldon_deploy_replaced.json"
+        
         cat ${MODEL_DEPLOY_FILE} | sed 's#\${SELDON_IMAGE_REPLACE}#$(params.MODEL_IMAGE)#g' > ${REPL_MODEL_DEPLOY_PATH}
         echo "Deployment is: "
         cat ${REPL_MODEL_DEPLOY_PATH}

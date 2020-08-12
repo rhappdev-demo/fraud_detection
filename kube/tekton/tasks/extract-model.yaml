@@ -48,19 +48,19 @@ spec:
         cd "${WORKING_DIR}"
         # We should already have a deployment directory from source code that has information 
         # about the deployment
-        DEPLOYMENT_PATH="deploy"
-        if [[ ! -d "${DEPLOYMENT_PATH}" ]]; then
-          echo "WARNING: Deployment directory ${DEPLOYMENT_PATH} is empty."
-          mkdir -p "${DEPLOYMENT_PATH}"
+        BUILD_PATH="build"
+        if [[ ! -d "${BUILD_PATH}" ]]; then
+          echo "WARNING: Deployment directory ${BUILD_PATH} is empty."
+          mkdir -p "${BUILD_PATH}"
         fi
 
-        # move everything in the DEPLOYMENT_PATH up a directory
-        cd "${DEPLOYMENT_PATH}"
+        # move everything in the BUILD_PATH up a directory
+        cd "${BUILD_PATH}"
         set +e
         mv * ..
         set -e
         cd ..
-        rm -r "${DEPLOYMENT_PATH}"
+        rm -r "${BUILD_PATH}"
 
     - name: extract
       image: $(params.EXTRACTION_IMAGE)

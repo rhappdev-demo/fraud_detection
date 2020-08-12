@@ -11,9 +11,18 @@ spec:
     type: string
     description: The URL of a page to be opened when the response button is pressed.  NOTE that the listener callback is associated with the bot that the secret came from
     default: "" 
+  - name: build-num
+    description: The build number associated with this prompting
+    type: string
+    default: "unknown"
+  # FIXME: The array parameter type is not working as advertised here
+  # https://github.com/tektoncd/pipeline/blob/v0.11.3/examples/v1beta1/pipelineruns/output-pipelinerun.yaml
+  # - name: callback-payload
+  #   type: array
+  #   description: The payload to be delivered with the callback (e.g. image_tag to deploy) specified as a list of keys followed by values
   - name: callback-payload
     type: string
-    description: The payload to be delivered with the callback (e.g. image_tag to deploy)
+    description: The payload to be delivered with the callback (e.g. image_tag to deploy) specified as a list of keys followed by values
   - name: message-payload-configmap
     type: string
     description: configmap name of the message JSON to send to Slack.  Should be a file called message-payload.json
@@ -35,19 +44,47 @@ spec:
       CURRENT_PROJECT=$(oc get po/${HOSTNAME} -o jsonpath='{.metadata.namespace}')
       echo "Current pipeline is ${CURRENT_PIPELINE} and current project is $CURRENT_PROJECT"
 
-      BUILD_NUM=$(params.callback-payload)
+      BUILD_NUM=$(inputs.params.build-num)
       BUILD_LOGS_URL_BASE="https://console-openshift-console.${DOMAIN}/k8s/ns/${CURRENT_PROJECT}/tekton.dev~v1alpha1~PipelineRun"
       BUILD_LOGS_URL="$BUILD_LOGS_URL_BASE/${CURRENT_PIPELINE}/"
       echo "Build logs url: ${BUILD_LOGS_URL}"
 
       # Set the callback if passed in.  If blank, then set to the top of
       # the openshift pipeline run page for this project
-      CALLBACK_URL=$(params.tekton-webhook-callback)
+      CALLBACK_URL=$(inputs.params.tekton-webhook-callback)
       if [[ -z "$CALLBACK_URL" ]]; then
         CALLBACK_URL="$BUILD_LOGS_URL_BASE/"
       fi
 
-      cat /var/config/message-payload.json | sed 's#\${CALLBACK_PAYLOAD}#${BUILD_NUM}#g' | sed "s#\${CALLBACK_URL}#${CALLBACK_URL}#g" | sed "s#\${BUILD_LOGS_URL}#${BUILD_LOGS_URL}#g" | sed "s#\${BUILD_NUM}#${BUILD_NUM}#g" > /var/payload/message-payload.json
+      echo "inputs are: '$(inputs.params.callback-payload)'"
+
+      # create the callback payload
+      PAYLOAD_FILE=/tmp/payload.json
+      cat <<EOF > ${PAYLOAD_FILE}
+      {
+      EOF
+      
+      i=0
+      for ARG in BUILD_NUM ${BUILD_NUM} $(inputs.params.callback-payload); do
+        if [ $((i%2)) -eq 0 ]; then
+          if [[ ${i} -ne 0 ]]; then
+            echo "," >> ${PAYLOAD_FILE}
+          fi
+          # name
+          echo -n "  \"${ARG}\": " >> ${PAYLOAD_FILE}
+        else
+          # value
+          echo -n "\"${ARG}\"" >> ${PAYLOAD_FILE}
+        fi
+        i=$((i+1))
+      done
+      echo "" >> ${PAYLOAD_FILE}
+      echo "}" >> ${PAYLOAD_FILE}
+
+      echo "Payload will be:"
+      cat ${PAYLOAD_FILE}
+
+      cat /var/config/message-payload.json | sed "s#\${CALLBACK_PAYLOAD}#$(base64 -w 0 ${PAYLOAD_FILE})#g" | sed "s#\${CALLBACK_URL}#${CALLBACK_URL}#g" | sed "s#\${BUILD_LOGS_URL}#${BUILD_LOGS_URL}#g" | sed "s#\${BUILD_NUM}#${BUILD_NUM}#g" > /var/payload/message-payload.json
       echo "Payload is now:"
       cat /var/payload/message-payload.json
     volumeMounts:
@@ -65,7 +102,7 @@ spec:
     - name: URL
       valueFrom:
         secretKeyRef:
-          name: $(params.webhook-secret)
+          name: $(inputs.params.webhook-secret)
           key: url
     volumeMounts:
       - name: process-payload
@@ -73,6 +110,6 @@ spec:
   volumes:
     - name: json-payload
       configMap:
-        name: $(params.message-payload-configmap)
+        name: $(inputs.params.message-payload-configmap)
     - name: process-payload
       emptyDir: {}

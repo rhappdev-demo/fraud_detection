@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: prompt-slack-task-run-
+spec:
+  params:
+    - name: webhook-secret
+      value: slack-webhook-secret
+    - name: message-payload-configmap
+      value: slack-message-payload
+    - name: build-num
+      value: "q6l6b"
+    - name: callback-payload
+      value: " MODEL_DEPLOYMENT_URL http://gogs-fraud-demo-cicd.apps.demo45.openshifttc.com/gogs/fraud_detection_stage/raw/8672927f1667b6b8389dcdc6bfe420d310189f1b/notebook/deploy/model_deployment.json"
+    - name: tekton-webhook-callback
+      value: ""
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: prompt-slack
+  timeout: 1h0m0s

@@ -77,7 +77,7 @@ spec:
     - name: NOTEBOOK_NAME
       value: $(params.NOTEBOOK_NAME)
     - name: PATH_CONTEXT
-      value: "$(tasks.checkout.results.checkout-dir)/notebook"
+      value: "$(tasks.checkout.results.checkout-dir)/$(params.PATH_CONTEXT)"
     - name: EXTRACTION_PATH_CONTEXT
       value: "extraction"
     - name: EXTRACTION_IMAGE
@@ -178,17 +178,12 @@ spec:
     runAfter:
       - scan-image
     params:
-      - name: MODEL_DEPLOY
-        value: "model_deployment.json"
-      - name: PATH_CONTEXT
-        value: $(tasks.extract-model.results.extraction-path)
+      - name: MODEL_DEPLOY_URL
+        value: "$(tasks.checkout.results.raw-url)/$(params.PATH_CONTEXT)/deploy/model_deployment.json"
       - name: PROJECT
         value: demo-dev
       - name: MODEL_IMAGE
         value: $(tasks.build-image.results.pushed-image-tag)
-    workspaces:
-    - name: workvol
-      workspace: local-workspace
   - name: prompt-stage
     taskRef:
       name: prompt-slack
@@ -197,8 +192,16 @@ spec:
     params:
     - name: webhook-secret
       value: slack-webhook-secret
+    - name: build-num
+      value: $(tasks.set-build-version.results.build-number)
     - name: message-payload-configmap
       value: slack-message-payload
+    # FIXME: Ideally this would be an array, but it's not working as advertised here:
+    # https://github.com/tektoncd/pipeline/blob/v0.11.3/examples/v1beta1/pipelineruns/output-pipelinerun.yaml
+    # - name: callback-payload
+    #   value:
+    #   - "MODEL_DEPLOYMENT_URL"
+    #   - "$(tasks.deploy-model.params.MODEL_DEPLOY_URL)"
     - name: callback-payload
-      value: $(tasks.set-build-version.results.build-number)
+      value: "MODEL_DEPLOYMENT_URL $(tasks.checkout.results.raw-url)/$(params.PATH_CONTEXT)/deploy/model_deployment.json"
    

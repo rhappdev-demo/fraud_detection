@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TaskRun
+metadata:
+  generateName: unpack-slack-payload-task-run-
+spec:
+  inputs:
+    params:
+      - name: payload
+        # a base64 encoded string of JSON that might look like below
+        value: "ewogICJCVUlMRF9OVU0iOiAicTZsNmIiLAogICJNT0RFTF9ERVBMT1lNRU5UX1VSTCI6ICJodHRwOi8vZ29ncy1mcmF1ZC1kZW1vLWNpY2QuYXBwcy5kZW1vNDUub3BlbnNoaWZ0dGMuY29tL2dvZ3MvZnJhdWRfZGV0ZWN0aW9uX3N0YWdlL3Jhdy84NjcyOTI3ZjE2NjdiNmI4Mzg5ZGNkYzZiZmU0MjBkMzEwMTg5ZjFiL25vdGVib29rL2RlcGxveS9tb2RlbF9kZXBsb3ltZW50Lmpzb24iCn0K"
+        # value: |
+        #   {
+        #     \"BUILD_NUM\": \"q6l6b\",
+        #     \"MODEL_DEPLOYMENT_URL\": \"http://gogs-fraud-demo-cicd.apps.demo45.openshifttc.com/gogs/fraud_detection_stage/raw/6f3874cbd8834ea94609abd3b622e803fbe312b1/notebook/deploy/model_deployment.json\"
+        #   }
+    resources:
+      - name: image
+        resourceRef:
+          name: model-image
+  serviceAccountName: pipeline
+  taskRef:
+    kind: Task
+    name: unpack-slack-payload
+  timeout: 1h0m0s

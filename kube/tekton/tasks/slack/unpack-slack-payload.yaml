@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: unpack-slack-payload
+spec:
+  resources:
+    inputs:
+      - name: image
+        type: image
+  params:
+  - name: payload
+    type: string
+    description: JSON format of payload that came in on webhook (base64 encoded)
+  results:
+  - name: model-deploy-url
+    description: The url when the model deployment script can be found
+  - name: image-tag
+    description: The full location of where to find the image tag
+  steps:
+  - name: unpack
+    image: quay.io/mhildenb/ubi-minimal-jq:latest
+    script: |
+      #!/usr/bin/env bash
+
+      set -e -o pipefail
+
+      PAYLOAD_JSON="$(echo $(params.payload) | base64 -d)"
+      echo "Payload is: ${PAYLOAD_JSON}"
+
+      echo "${PAYLOAD_JSON}" > /tmp/payload.json
+
+      BUILD_NUM=$(cat /tmp/payload.json | jq -r '{BUILD_NUM} | .[]')
+      echo "Build number is: ${BUILD_NUM}"
+
+      BUILD_NUM=$(echo "${PAYLOAD_JSON}" | jq -r '{BUILD_NUM} | .[]')
+      MODEL_DEPLOYMENT_URL=$(echo "${PAYLOAD_JSON}" | jq -r '{MODEL_DEPLOYMENT_URL} | .[]')
+
+      IMAGE_TAG="$(resources.inputs.image.url):${BUILD_NUM}"
+
+      echo "${MODEL_DEPLOYMENT_URL}" | tr -d "\n" | tee $(results.model-deploy-url.path)
+      echo "${IMAGE_TAG}" | tr -d "\n" | tee $(results.image-tag.path)

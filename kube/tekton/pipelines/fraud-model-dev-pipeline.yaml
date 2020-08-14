@@ -1,7 +1,7 @@
 # WARNING: DO NOT kubectl apply -f this file directly.  It first needs variable substitution like so:
 # sed "s/demo-dev/$dev_prj/g" $DEMO_HOME/kube/tekton/pipelines/fraud-model-dev-pipeline.yaml | sed "s/demo-cicd/$cicd_prj/g" | oc apply -f - -n $cicd_prj
 # where dev_prj is set to point to your dev project and cicd_prj is set to point to your cicd project
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: fraud-model-dev-pipeline

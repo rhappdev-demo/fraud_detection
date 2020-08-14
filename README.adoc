@@ -191,6 +191,13 @@ Demo elements installed successfully!
 
 == Validating Demo Setup ==
 
+[NOTE]
+.If you're in a hurry and you just want the pipeline to run end to end
+====
+. Set accuracy per <<Adjusting Required Accuracy Threshold, here>>
+. Fix vulnerability per <<Passing Sysdig Image Scan,here>>
+====
+
 If your setup script runs to completion (as seen <<Main Demo Setup, Main Demo Setup>>) then you should be able to validate your setup by doing the following:
 
 . Trigger the pipeline using the following command (must have run the demo setup):
@@ -211,6 +218,9 @@ pr $DEMO_HOME/kube/tekton/pipelinerun/fraud-model-dev-pipeline-run.yaml
 pr $DEMO_HOME/kube/tekton/pipelinerun/fraud-model-dev-pipeline-run.yaml
 ----
 +
+. This time it should fail due to Sysdig image scan failures
+. You can fix this vulnerability by following the <<Passing Sysdig Image Scan,instructions here>>
+** NOTE: by following the instructions, a new run of the pipeline will automatically be triggered
 . This time it should complete successfully and deploy the Seldon model to the development project
 ** If you used the slack webhook, you should see it post to your corresponding slack channel
 +
@@ -346,6 +356,27 @@ The threshold can be easily changed by running link:scripts/util-adjust-accuracy
 ----
 $DEMO_HOME/scripts/util-adjust-accuracy-threshold.sh 98.87
 ----
+
+=== Passing Sysdig Image Scan ===
+
+The repo that is cloned by design has a python package vulnerability in it that the Sysdig image scan will pickup.  The easiest way to get this to pass is to update the requirements.txt file in the cluster local gogs repo.
+
+. First, get the url of the gogs repo
++
+----
+GOGS_URL=$(echo "http://$(oc get route gogs -n ${PROJECT_PREFIX}-cicd -o jsonpath='{.spec.host}')")
+----
++
+. Browse to "$GOGS_URL/gogs/fraud_detection_support/_edit/master/notebook/build/requirements.txt"
+. Sign in using the following credentials
+** username: gogs
+** password: gogs
+. When presented with edit screen, add the `jinja2==2.11.2` line to the bottom of the file
++
+image:images/gogs-edit.png[]
++
+. Commit the change by clicking the green "Commit Changes" button at the bottom of the edit screen.
+** _NOTE: This will kickoff a pipeline automatically
 
 === Notebook and Model Setup for Seldon ===
 

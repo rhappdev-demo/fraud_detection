@@ -23,6 +23,13 @@ spec:
     - name: train
     # FIXME: Don't name the project explicitly
       image: $(params.TRAIN_IMAGE)
+      resources:
+        requests:
+          cpu: 1
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
       workingDir: $(workspaces.workvol.path)
       script: |
         #!/usr/bin/env bash

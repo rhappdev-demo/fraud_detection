@@ -1,4 +1,4 @@
-apiVersion: tekton.dev/v1alpha1
+apiVersion: tekton.dev/v1beta1
 kind: PipelineRun
 metadata:
   generateName: fraud-model-dev-pipeline-run-
@@ -9,8 +9,8 @@ spec:
   # uncomment these parameters if you want to point to the internal git repo, pointing external might
   # make iteration easier
   - name: GIT_REPO
-    # value: "http://gogs:3000/gogs/fraud_detection_support.git"
-    value: "https://github.com/hatmarch/fraud_detection_support.git"
+    value: "http://gogs:3000/gogs/fraud_detection_support.git"
+    # value: "https://github.com/hatmarch/fraud_detection_support.git"
   - name: PATH_CONTEXT
     value: "notebook"
   - name: NOTEBOOK_NAME

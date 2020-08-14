@@ -34,10 +34,12 @@ spec:
     - name: inline-scan
       image: quay.io/mhildenb/sysdig-inline-scan:1.1
       resources:
-        limits:
-          cpu: 1.5
         requests:
           cpu: 1
+          memory: 512Mi
+        limits:
+          cpu: 2
+          memory: 2Gi
       args: 
         - skopeo-analyze
         - -k 

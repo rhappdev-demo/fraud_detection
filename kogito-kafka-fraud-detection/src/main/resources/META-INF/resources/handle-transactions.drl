@@ -1,0 +1,25 @@
+package org.redhat.appdev
+unit TransactionValidationService
+
+import org.redhat.appdev.Transaction;
+
+
+rule "Process transactions"
+
+when
+    $transaction: /transaction[flagged == false, amount < 3000]
+then
+	System.out.println("Transaction amount is lower and hence proceeding to cancel transaction automatically " + $transaction);   
+	$transaction.setFlagged( false );
+    
+end
+
+rule "Send automated transactions greater than 3000"
+
+when
+    $transaction: /transaction[flagged == false, amount >= 3000]
+then
+	System.out.println("I am sending to manual processing for transactions amounting more than 3000 " + $transaction);
+ 	$transaction.setFlagged( true ); 
+    
+end

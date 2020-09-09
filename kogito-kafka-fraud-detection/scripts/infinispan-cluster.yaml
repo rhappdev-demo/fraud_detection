@@ -1,0 +1,9 @@
+apiVersion: infinispan.org/v1
+kind: Infinispan
+metadata:
+  name: appdev-infinispan-cluster
+  labels:
+    app: fraud-detection
+  namespace: appdev-aiml-demo
+spec:
+  replicas: 1

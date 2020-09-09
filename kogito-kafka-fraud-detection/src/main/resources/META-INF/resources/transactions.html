@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css">
+    <title>When AI meets DevOps</title>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <h2 class="text-center">
+            Flag those Fradulent Transactions
+        </h2><br>
+        <h5 class="text-center">Hint: Actually fill in the form. There is no error checking &#128540; </h5>
+        <h5 class="text-center">Hint: Add transaction amount lesser than 3000 to get an approval decision instantly &#128540; </h5>
+        <h5 class="text-center">Hint: Add transaction amount greater than 3000 to get an approval decision sent to user flow &#128540; </h5>
+        <div class="col-md-4 col-md-offset-1">
+            <h3 class="text-center">Submit New Transaction</h3>
+            <form id="newApplicantForm">
+            <div class="form-group">
+                <label for="name">Your Name</label>
+                <input type="text" name="name" id="name" placeholder="name" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="reference">Your Transaction Reference </label>
+                <input type="text" name="reference" id="reference" placeholder="reference" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="mode">Mode of Transaction</label>
+                <select name="mode" id="mode" class="form-control">
+                    <option value="">--Select Mode--</option>
+                    <option value="Credit card at POS">Credit card</option>
+                    <option value="Online Purchase">Online Purchase</option>
+                    <option value="Online Transfer">Online Transfer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="location">Location</label>
+                <select name="location" id="location" class="form-control">
+                    <option value="">--Select location--</option>
+                    <option value="APAC">APAC</option>
+                    <option value="Americas">Americas</option>
+                    <option value="Europe">Europe</option>
+                    <option value="Rest of the World">Rest of World</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="number">Transaction Amount</label>
+                <input type="number" name="amount" id="amount" placeholder="amount" class="form-control">
+            </div>
+            <input type="hidden" id="flagged" name="flagged" value="false">
+            <input type="hidden" id="isFraud" name="isFraud" value="false">
+            </form>
+            <div class="form-group">
+                <button class="btn btn-info" id="add">Submit</button>
+            </div>
+        </div>
+        <div class="col-md-4 col-md-offset-1">
+            <h3 class="text-center">Fradulent Transactions Automatically Cancelled</h3>
+            <div class="form-group">
+                <table id="automodetable" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Mode</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Amount</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+        <div class="col-md-4 col-md-offset-1">
+            <h3 class="text-center">Fradulent Transactions to be Manually Processed</h3>
+            <div class="form-group">
+                <table id="manualmodetable" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Mode</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Amount</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+        <div class="col-md-4 col-md-offset-1">
+            <h3 class="text-center">Non Fradulent Transactions</h3>
+            <div class="form-group">
+                <table id="nonfraudtable" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Reference</th>
+                        <th scope="col">Mode</th>
+                        <th scope="col">Location</th>
+                        <th scope="col">Amount</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+       
+        
+
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+<script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script src="serializetojson.js"></script>
+<script>
+
+    var source = new EventSource("/automode/stream");
+    source.onmessage = function (event) {
+        addToTable(event.data);
+    };
+
+    var t = $('#automodetable').DataTable();
+    var counter = 1;
+
+    function addToTable(eventdata) {
+       var eventobj = JSON.parse(eventdata);
+       t.row.add( [
+            counter,
+            eventobj.data.name,
+            eventobj.data.mode,
+            eventobj.data.reference,
+            eventobj.data.location,
+            eventobj.data.amount
+        ] ).draw( false );
+
+        counter++;
+    }
+
+    var manualsource = new EventSource("/manualmode/stream");
+    manualsource.onmessage = function (eventManual) {
+        addToManualTable(eventManual.data);
+    };
+
+    var tManual = $('#manualmodetable').DataTable();
+    var counterManual = 1;
+
+    function addToManualTable(eventManualdata) {
+       var eventobjManual = JSON.parse(eventManualdata);
+       tManual.row.add( [
+            counterManual,
+            eventobjManual.data.name,
+            eventobjManual.data.mode,
+            eventobjManual.data.reference,
+            eventobjManual.data.location,
+            eventobjManual.data.amount
+        ] ).draw( false );
+
+        counterManual++;
+    }
+
+    var nonFraudsource = new EventSource("/notfraudtrx/stream");
+    nonFraudsource.onmessage = function (eventnonFraud) {
+        addToNonFraudTable(eventnonFraud.data);
+    };
+
+    var tNonFraud = $('#nonfraudtable').DataTable();
+    var counterNonFraud = 1;
+
+    function addToNonFraudTable(eventNonFrauddata) {
+       var eventobjNonFraud = JSON.parse(eventNonFrauddata);
+       tNonFraud.row.add( [
+            counterNonFraud,
+            eventobjNonFraud.data.name,
+            eventobjNonFraud.data.mode,
+            eventobjNonFraud.data.reference,
+            eventobjNonFraud.data.location,
+            eventobjNonFraud.data.amount
+        ] ).draw( false );
+
+        counterNonFraud++;
+    }
+
+    $("#add").on('click', function() {
+        $.ajax({
+            url: '/newtransaction',
+            type : "POST",
+            dataType : 'json',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            data : JSON.stringify($("#newApplicantForm").serializeToJSON()),
+            success : function(result) {
+                console.log(result);
+            },
+            error: function(xhr, resp, text) {
+                console.log(xhr, resp, text);
+            }
+        })
+    });
+</script>
+</body>
+</html>

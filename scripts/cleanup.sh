@@ -3,6 +3,7 @@ declare PROJECT_BASE="fraud-demo"
 declare FORCE=""
 declare REMOVE_OPA=""
 declare REMOVE_SELDON=""
+declare REMOVE_ODH=""
 
 while (( "$#" )); do
   case "$1" in
@@ -16,6 +17,10 @@ while (( "$#" )); do
       ;;
     --remove-seldon)
       REMOVE_SELDON="true"
+      shift
+      ;;
+    --remove-odh)
+      REMOVE_ODH="true"
       shift
       ;;
     -f|--force)
@@ -35,7 +40,7 @@ opa-clean() {
   # per the instructions here: https://github.com/open-policy-agent/gatekeeper#uninstallation
   oc delete -f $DEMO_HOME/kube/opa/modelaccuracy-crd.yaml
   oc delete -f $DEMO_HOME/kube/opa/modelaccuracythreshold-template.yaml
-  oc delete -f $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml
+  # oc delete -f $DEMO_HOME/kube/opa/modelaccuracythreshold.yaml
 
   oc delete -f $DEMO_HOME/kube/opa/gatekeeper-install.yaml
 }
@@ -63,6 +68,20 @@ seldon-clean() {
     oc delete ip -n openshift-operators $(oc get ip -A | grep seldon | awk '{print $2}')
 }
 
+odh-clean() {
+    # uninstall the operator based on our subscription
+    echo "Unsubscribing from the odh operator"
+    uninstall-operator opendatahub-operator 
+
+    # unsubscribing from the operator does not appear to clean up the CRD
+    echo "Removing orphaned kfdef crd"
+    oc delete crd/kfdefs.kfdef.apps.kubeflow.org
+
+    # cleanup and install plans 
+    echo "Removing orphaned install plans"
+    oc delete ip -n openshift-operators $(oc get ip -A | grep odh | awk '{print $2}')
+}
+
 # Assumes proxy has been setup
 force-clean() {
     declare NAMESPACE=$1
@@ -83,6 +102,10 @@ fi
 
 if [[ -n "$REMOVE_SELDON" ]]; then
   seldon-clean
+fi
+
+if [[ -n "$REMOVE_ODH" ]]; then
+  odh-clean
 fi
 
 PROXY_PID=""

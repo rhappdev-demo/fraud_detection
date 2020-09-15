@@ -122,6 +122,12 @@ command.install() {
   info "Configure service account permissions for builder"
   oc policy add-role-to-user system:image-puller system:serviceaccount:$dev_prj:builder -n $cicd_prj
 
+  echo "Waiting for pipeline accounts to be installed..."
+  while [[ -z "$(oc get sa pipeline -n $cicd_prj 2>/dev/null)" ]]; do
+    echo -n "."
+  done
+  echo "done."
+
   info "Configure service account permissions for pipeline"
   oc policy add-role-to-user edit system:serviceaccount:$cicd_prj:pipeline -n $dev_prj
   oc policy add-role-to-user system:image-puller system:serviceaccount:$cicd_prj:pipeline -n $dev_prj
@@ -140,7 +146,10 @@ command.install() {
   if [[ -z "${slack_webhook_url}" ]]; then
     info "NOTE: No slack webhook url is set.  You can add this later by running oc create secret generic slack-webhook-secret."
   else
-    oc create secret generic slack-webhook-secret --from-literal=url=${slack_webhook_url} -n $cicd_prj
+    # create the secret if it doesn't already exist
+    oc get secret slack-webhook-secret -n $cicd_prj 2>/dev/null || {
+      oc create secret generic slack-webhook-secret --from-literal=url=${slack_webhook_url} -n $cicd_prj
+    }
   fi
 
   info "Deploying dev and staging pipelines"
@@ -159,7 +168,7 @@ command.install() {
   oc apply -f $DEMO_HOME/kube/tekton/triggers --recursive -n $cicd_prj
 
   info "Initiatlizing git repository in Gogs and configuring webhooks"
-  sed "s/@HOSTNAME/$GOGS_HOSTNAME/g" $DEMO_HOME/kube/config/gogs-configmap.yaml | oc create -f - -n $cicd_prj
+  sed "s/@HOSTNAME/$GOGS_HOSTNAME/g" $DEMO_HOME/kube/config/gogs-configmap.yaml | oc apply -f - -n $cicd_prj
   oc rollout status deployment/gogs -n $cicd_prj
   oc create -f $DEMO_HOME/kube/config/gogs-init-taskrun.yaml -n $cicd_prj
 

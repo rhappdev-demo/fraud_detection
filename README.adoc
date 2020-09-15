@@ -105,6 +105,7 @@ Install seldon core across the whole cluster.  This will allow it to reuse one c
 
 . Ensure that you don't already have the seldon operator installed but running the following command.  
 ** _If you get a number of 1 or greater then Seldon is already installed_
++
 ----
 oc get sub -A 2>/dev/null | grep seldon-operator | wc -l
 ----

@@ -1,0 +1,157 @@
+= AI/ML Meets DevOps Walkthrough
+:experimental:
+:toc:
+:toclevels: 4
+:imagesdir: images
+
+[IMPORTANT]
+====
+Before attempting this run through be sure to:
+
+. Be sure to setup the demo per link:../README.adoc[README]
+. Open a shell and navigate to the root of this repo
+. Run the following command
++
+----
+docker run -it -v ~/.kube:/home/jboss/.kube -v ~/.oh-my-zsh:/home/jboss/.oh-my-zsh -v $(pwd):/projects/ai-demo quay.io/mhildenb/ai-demo-shell:latest /bin/zsh
+# You should enter the container in the projects directory
+cd ai-demo
+. scripts/shell-setup.sh
+PROJECT_PREFIX=fraud-demo
+----
+====
+
+== Introduction == 
+
+For this walkthrough we will demonstrate how existing DevOps practices on OpenShift can aid with ML processes and workloads by:
+
+. Mediating datascientists access to data
+. Making them more repeatable
+. Making them more secure and open to governance
+. Making model builds more explanable and auditable
+
+We join the story at the point where a finance company needs to quickly identify fraudulent transactions but an increase in volume means that there are too many transactions to manually review, even when aided by a DMN-based decision engine (such as Kogito or PAM)
+
+This outlines the process by which AI models can be introduced into the existing flow repeatably and unobtrusively using Kubernetes and some of the pieces of the AI/ML reference architecture: OpenDataHub
+
+== Model Creation ==
+
+In this section we will introduce how Jupyter notebooks can be run in cluster in a sharable way and governed by revision control
+
+. Open Juptyer Hub on the cluster.  
+** You can find the URL on the command line using this command
++
+----
+JUPYTER_HUB_URL=$(echo "https://$(oc get route jupyterhub -n ${PROJECT_PREFIX}-dev -o jsonpath='{.spec.host}')")
+echo "$JUPYTER_HUB_URL"
+----
++
+. Log into Jupyter Hub using your OCP login credentials
+. Select the proper image `demo-notebook-image:latest` by default.  No need to set all the other fields
++ 
+image:jupyterhub-spawner.png[]
++
+. (Once spawned, you should not only have access to a notebook, but it should be connected to a git repo that is internal to the cluster)
+. Open `fraud_detection/notebook/frauddetection.ipynb`
++
+image:notebook-selection.png[]
++
+. Once the notebook is loaded, select `Kernel > Restart and Run All Cells`
++ 
+image:restart-kernel.png[]
++
+. Navigate down to the cell with the UI input for the data.  Select `File` and click proceed
+** Talk about how with OpenShift, access to all these different types of data is possible as mediated by the platform
++ 
+image:file-input.png[]
++
+. Show the `Initial Model Creation` cell and explain how this is our first attempt to train the model
+. Make a superficial change to the cell (that will cause it to be seen as a change)
+. IMPORTANT: Save the notebook
+. Scroll to the `Git Helper` cell at the end of the notebook, and uncomment the lines for committing and pushing to origin
+** [blue]#Open another window showing the pipeline run page of cicd to show build trigger#
+** Run the GitHelper cell using the `Run` button at the top of the notebook
+** Once run, this should trigger a pipeline
+
+== Pipeline Trigger ==
+
+. Show the pipeline running
+** Highlight the Train-model run and possibly extract
+. Pipeline should fail on the validate model phase
+. Open the validate logs and you should see something like this:
++
+image:validate-model-failure.png[]
++
+. Navigate back to Jupyter Hub
+
+== Revisit Notebook
+
+. IMPORTANT: [red]#Go to the `Git Helper` cell and comment out the `git` lines!#
+. Select `Kernel > Restart and Rerun All`
+** Click on File
+. Remove the Training tag from the `Initial Model Creation` cell
+. Show the cells leading up to the `Re-create the model with Important Features` cell
+. Show that the accuracy is better
+. Add Training tag to this cell
+. Save the notebook
+. Scroll to the `Git Helper` cell at the end of the notebook, and uncomment the lines for committing and pushing to origin
+** [blue]#Open another window showing the pipeline run page of cicd to show build trigger#
+** Run the GitHelper cell using the `Run` button at the top of the notebook
+** Once run, this should trigger a pipeline
+
+== Pipeline Trigger and Image Scan
+
+. Show that the build gets farther this time
+. This time show the logs using this command in the shell
++
+----
+tkn pr logs -L -f
+----
++
+. Explain how the build image step is packaging our model in an image and this is what Seldon does for us
+. This time the build will fail on image scanning
++
+image:failed-image-scan.png[]
++
+. Click on the URL shown in the build output
+. Log into sysdig and show the overview page
+** Point out the matching build tag (circled) and click on the `vulnerabilities: package` that caused the problem
++
+image:sysdig-results.png[]
++
+. From this page click on the `vulnerabilities: package` section to open a new tab with more info
+. Show the error on this page
++
+image:jinja-vuln.png[]
++
+. Then click on the CVE-ID that will open a new tab and show how to remediate the issue
++
+image:cve-listing.png[]
+
+== Remediate the Vulnerability
+
+. To remediate: Open gogs repo by first getting the url of the gogs repo
++
+----
+GOGS_URL=$(echo "http://$(oc get route gogs -n ${PROJECT_PREFIX}-cicd -o jsonpath='{.spec.host}')")
+echo "$GOGS_URL/gogs/fraud_detection_support/_edit/master/notebook/build/requirements.txt"
+----
++
+. Browse to `$GOGS_URL/gogs/fraud_detection_support/_edit/master/notebook/build/requirements.txt`
+. Sign in using the following credentials
+** username: gogs
+** password: gogs
+. When presented with edit screen, add the `jinja2==2.11.2` line to the bottom of the file
++
+image:gogs-edit.png[]
++
+. Commit the change with a heading `Fix jinja Vulnerability` by clicking the green "Commit Changes" button at the bottom of the edit screen.
+** NOTE: This will kickoff a pipeline automatically
+. Show the Pipeline UI to show the pipeline being run
+. Show the Deployment completion
+. Show the Slack Prompt (perhaps preloading the tab)
+
+== Troubleshooting ==
+
+See link:../README.adoc[README.adoc] for appendix of troubleshooting tips
+

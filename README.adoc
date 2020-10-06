@@ -8,14 +8,12 @@
 
 This project is still in progress. The objective of this project is to illustrate the use of OpenDataHub running on Openshift to run AI/ML workload. OpenDataHub components used in the project include:
 
-* Spache Spark
-* Red Hat Data Virtualization
 * Jupyterhub
 * Seldon
 * Kafka
-* Rook
-
-image:inProgress.jpeg["Work In Progress"]
+* Tekton
+* Gatekeeper/OPA
+* Sysdig (image scanning)
 
 === Repository Structure
 
@@ -52,11 +50,18 @@ To install the demo you must first:
 
 [WARNING]
 ====
-Make sure you run the following command before executing any of these commands listed in this demo.
+To eliminate as many incompatibility problems as possible when setting up the demo, you should execute the commands in this setup (and the walkthrough script) by running the commands in a container.  Follow these steps before executing any of the setup pre-requisites or running the main demo.
 
+. Change to the root directory of this git repo on your local machine
+. Run the following commands from that directory:
+** NOTE: [blue]#_If you don't want to share your host's kubeconfig, then remove `-v ~/.kube:/home/jboss/.kube` from the docker command and login instead from inside the container_#
++
 ----
-. scripts/shell-setup.sh 
-----
+docker run -it -v ~/.kube:/home/jboss/.kube -v ~/.oh-my-zsh:/home/jboss/.oh-my-zsh -v $(pwd):/projects/ai-demo quay.io/mhildenb/ai-demo-shell:latest /bin/zsh
+# You should enter the container in the projects directory
+cd ai-demo
+. scripts/shell-setup.sh
+PROJECT_PREFIX=fraud-demo
 ====
 
 === Demo Prerequisites

@@ -11,4 +11,4 @@ spec:
     namespaces:
       - "demo-cicd"
   parameters:
-    accuracyThreshold: 1.0
+    accuracyThreshold: 0.93

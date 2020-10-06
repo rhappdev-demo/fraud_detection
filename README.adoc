@@ -58,10 +58,16 @@ To eliminate as many incompatibility problems as possible when setting up the de
 +
 ----
 docker run -it -v ~/.kube:/home/jboss/.kube -v ~/.oh-my-zsh:/home/jboss/.oh-my-zsh -v $(pwd):/projects/ai-demo quay.io/mhildenb/ai-demo-shell:latest /bin/zsh
+----
++
+. Once inside the container issue the following command:
++
+----
 # You should enter the container in the projects directory
 cd ai-demo
 . scripts/shell-setup.sh
 PROJECT_PREFIX=fraud-demo
+----
 ====
 
 === Demo Prerequisites

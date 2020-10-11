@@ -8,10 +8,7 @@ RUN yum -y install bc
 # install stern
 RUN cd /usr/local/bin && \
     wget https://github.com/wercker/stern/releases/download/1.11.0/stern_linux_amd64 && \
-    mv stern_linux_amd64 stern && chmod 755 stern && \
-# instal hey
-    wget https://storage.googleapis.com/hey-release/hey_linux_amd64 && \
-    mv hey_linux_amd64 hey && chmod 755 hey
+    mv stern_linux_amd64 stern && chmod 755 stern
 
 # install AWS cli
 RUN curl "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \

@@ -104,10 +104,6 @@ if [[ -n "$REMOVE_SELDON" ]]; then
   seldon-clean
 fi
 
-if [[ -n "$REMOVE_ODH" ]]; then
-  odh-clean
-fi
-
 PROXY_PID=""
 if [[ ! -z "$FORCE" ]]; then
     echo -n "opening proxy"
@@ -139,6 +135,10 @@ do
         force-clean $PROJECT
     fi
 done
+
+if [[ -n "$REMOVE_ODH" ]]; then
+  odh-clean
+fi
 
 if [[ ! -z "$PROXY_PID" ]]; then
     echo "closing proxy"

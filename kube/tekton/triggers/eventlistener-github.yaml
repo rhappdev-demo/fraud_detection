@@ -8,7 +8,7 @@ spec:
   triggers:
     - name: model-webhook-github
       bindings:
-      - ref: github-triggerbinding
+      - name: github-triggerbinding
       template:
         name: model-trigger-template
 ---
